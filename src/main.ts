@@ -13,6 +13,8 @@ import TelescopesView from "./TelescopesView.vue";
 import Weather from "./Weather.vue";
 import HomeView from "./HomeView.vue";
 import SettingsView from "./SettingsView.vue";
+import ImagesView from "./ImagesView.vue";
+import ObjectivesView from "./ObjectivesView.vue";
 import { attachConsole } from '@tauri-apps/plugin-log';
 
 // Logs from Tauri will be shown in the console
@@ -29,7 +31,9 @@ loadSettings().then(() => {
 const routes = [
     { path: '/', component: HomeView, name: 'home' },
     { path: '/telescopes', component: TelescopesView, name: 'telescopes' },
-    //    { path: '/stellarium', component: StellariumView, name: 'stellarium' },
+    { path: '/stellarium', component: ImagesView, name: 'stellarium' },
+    { path: '/images', component: ImagesView, name: 'images' },
+    { path: '/objectives', component: ObjectivesView, name: 'objectives' },
     { path: '/weather', component: Weather, name: 'weather' },
     { path: '/settings', component: SettingsView, name: 'settings' },
 ]

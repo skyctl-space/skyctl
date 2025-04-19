@@ -18,9 +18,9 @@ const router = useRouter();
 const showAddSiteModal = ref(false); // State to control the modal visibility
 
 const showMapModal = ref(false); // State to control the map modal visibility
-const selectedLocation = ref<{ latitude: number; longitude: number } | null>(null);
+const selectedLocation = ref<{ latitude: number; longitude: number }>({latitude: 0, longitude: 0});
 
-function openMapDialog(siteIdx: idx) {
+function openMapDialog(siteIdx: number) {
   selectedLocation.value = {
     latitude: settings.sites[siteIdx].latitude,
     longitude: settings.sites[siteIdx].longitude,
@@ -90,6 +90,10 @@ function deleteSite(index: number) {
     settings.sites.splice(index, 1); // Remove the site from the list
     unsavedChanges.value = true; // Mark changes as unsaved
     deleteDialog.value = false; // Close the delete confirmation dialog
+
+    if (settings.selectedSiteIdx === index) {
+        settings.selectedSiteIdx = undefined; // Clear the selected site if it was deleted
+    }
 }
 const deleteDialog = ref(false); // State to control the delete confirmation dialog
 const deleteIndex = ref<number>(0); // Index of the site to be deleted

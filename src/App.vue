@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useTheme } from 'vuetify'
 import md5 from 'crypto-js/md5'
-import { computed, inject, ref, onMounted, onUnmounted } from 'vue'
+import { computed, inject, ref, onMounted, onUnmounted, provide } from 'vue'
 //import { invoke } from "@tauri-apps/api/core";
+import { settings, saveSettings } from "./store";
 import { listen } from '@tauri-apps/api/event';
 import { GeoLocation } from "./types";
 
@@ -29,8 +30,6 @@ listen<LocationPayload>('location_update', (event) => {
   geoLocation.error = null;
 });
 
-const showMapModal = ref(false) // State to control the modal visibility
-
 const theme = useTheme()
 
 function toggleTheme() {
@@ -48,14 +47,42 @@ const currentTime = ref(new Date().toLocaleString("en-US", {
   timeZoneName: "short"
 }));
 
-// Format latitude and longitude
-// const formattedGeoLocation = computed(() => {
-//   const latitude = formatLatitude(geo_latitude.value);
-//   const longitude = formatLongitude(geo_longitude.value);
+const siteOptions = computed(() =>
+  settings.sites.map((site, index) => ({
+    title: site.name,
+    value: index
+  }))
+)
 
-//   return `Lat: ${latitude}, Lon: ${longitude}`
-// })
+const selectedSite = computed({
+  get() {
+    if (settings.selectedSiteIdx === undefined) {
+      return undefined;
+    }
+    return {
+      title: settings.sites[settings.selectedSiteIdx].name,
+      value: settings.selectedSiteIdx
+    }
+  },
+  set(value) {
+    console.log("Selected site index:", value);
+    if (value === undefined) {
+      settings.selectedSiteIdx = undefined;
+    } else {
+      settings.selectedSiteIdx = value.value;
+    }
+    saveSettings();
+  }
+});
 
+const selectedSiteInfo = computed(() => {
+  if (settings.selectedSiteIdx === undefined) {
+    return undefined;
+  }
+  return settings.sites[settings.selectedSiteIdx];
+});
+
+provide('selectedSite', selectedSiteInfo);
 
 onMounted(() => {
   const interval = setInterval(() => {
@@ -100,16 +127,15 @@ onMounted(() => {
         </router-link>
       </v-app-bar-title>
       <v-spacer></v-spacer>
-      <span style="color: white; margin-right: 16px;">{{ currentTime }}</span>
 
-      <!-- <v-progress-circular color="dark-blue" indeterminate v-if="geo_isLoading"></v-progress-circular>
-      <v-chip variant="text" color="red" class="translucent-chip" v-if="geo_error">
-        {{ geo_error }}
-      </v-chip>
-      <v-chip variant="text" color="white" class="translucent-chip" v-else @click="showMapModal = true">
-        <v-icon icon="mdi-map-marker" size="16" class="mr-2"></v-icon>
-        <span style="color: white;">{{ formattedGeoLocation }}</span>
-      </v-chip> -->
+      <v-chip color="red" variant="flat" v-if="settings.sites.length === 0">No Observing Sites configured</v-chip>
+      <v-combobox hide-details 
+        style="color:white; background-color: rgba(128, 0, 0, 0.5); border-radius: 6px; " 
+        class="my-auto" v-else density="compact" variant="underlined" :items="siteOptions" v-model="selectedSite"
+        label="Current Observing site" />
+      <v-spacer/>
+
+      <span style="color: white; margin-right: 16px;">{{ currentTime }}</span>
 
       <v-btn icon="mdi-theme-light-dark" @click="toggleTheme()"></v-btn>
     </v-app-bar>
@@ -122,7 +148,8 @@ onMounted(() => {
       <v-divider></v-divider>
 
       <v-list density="compact" nav>
-        <v-list-item prepend-icon="mdi-telescope" title="Telescopes" value="telescopes" to="/telescopes"></v-list-item>
+        <v-list-item prepend-icon="mdi-telescope" title="Telescopes" value="telescopes" to="/telescopes">
+          </v-list-item>
         <v-list-item prepend-icon="mdi-weather-night" title="Stellarium" value="stellarium"
           to="/stellarium"></v-list-item>
         <v-list-item prepend-icon="mdi-list-status" title="Objectives" value="objectives"
@@ -137,21 +164,6 @@ onMounted(() => {
     <v-main>
       <RouterView />
     </v-main>
-
-    <!-- Modal for Google Maps -->
-    <v-dialog v-model="showMapModal" max-width="800px">
-      <v-card>
-        <v-card-title>
-          Location on Google Maps
-          <v-spacer></v-spacer>
-          <v-btn icon="mdi-close" @click="showMapModal = false"></v-btn>
-        </v-card-title>
-        <v-card-text>
-          <iframe :src="`https://www.google.com/maps?q=${geoLocation.latitude},${geoLocation.longitude}&z=15&output=embed`" width="100%"
-            height="400" style="border:0;" allowfullscreen=false loading="lazy"></iframe>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
   </v-app>
 </template>
 
