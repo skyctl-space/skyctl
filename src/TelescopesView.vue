@@ -2,10 +2,28 @@
 import { ref, watch } from 'vue'
 import { settings, saveSettings } from "./store";
 import { Connection, ConnectionType } from "./types";
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from "@tauri-apps/api/event";
 
-const detectedASIAIRDevices = ref([
-  { title: 'EdgeHD', value: '192.168.100.200' },
-  { title: 'Foo', value: '192.168.100.200' },
+async function startASIAIRDiscovery() {
+  await invoke("start_asiair_discovery");
+}
+
+async function stopASIAIRDiscovery() {
+  await invoke("stop_asiair_discovery");
+}
+
+interface ASIAIRDevice {
+  title: string;
+  value: string;
+}
+
+listen("discovered_device", (event) => {
+  console.log("Device found:", event.payload);
+  detectedASIAIRDevices.value = event.payload as ASIAIRDevice[];
+});
+
+const detectedASIAIRDevices = ref<ASIAIRDevice[]>([
 ]);
 
 interface TelescopeConnection {
@@ -45,6 +63,17 @@ function toggleMaximize(index: number | null) {
 // Modal state for adding a new connection
 const showAddConnectionModal = ref(false);
 
+async function showConnectionModal() {
+  showAddConnectionModal.value = true;
+  startASIAIRDiscovery();
+}
+
+async function hideConnectionModal() {
+  showAddConnectionModal.value = false;
+  stopASIAIRDiscovery();
+}
+
+
 // Temporary object to hold new connection data
 const newConnection = ref<Connection>({
   name: '',
@@ -68,7 +97,7 @@ async function saveNewConnection() {
     await saveSettings();
     resetNewConnection();
     updateTelescopes();
-    showAddConnectionModal.value = false;
+    await hideConnectionModal();
     newConnectionErrorMessage.value = '';
   } else {
     newConnectionErrorMessage.value = 'Please fill in all required fields.';
@@ -118,7 +147,7 @@ function handleRemoveConnection() {
   <v-container fluid class="pa-4 fill-height d-flex flex-column" style="width: 100%">
     <v-toolbar border density="compact" class="mb-4" :class="{ hidden: maximizedIndex !== null }">
       <v-toolbar-title text="Telescope Control"></v-toolbar-title>
-      <v-btn elevation="4" prepend-icon="mdi-plus" @click="showAddConnectionModal = true">Add Connection...</v-btn>
+      <v-btn elevation="4" prepend-icon="mdi-plus" @click="showConnectionModal()">Add Connection...</v-btn>
     </v-toolbar>
     <div class="panel-grid">
       <v-card v-for="(telescope, i) in telescopes" :key="i" class="panel"
@@ -183,7 +212,7 @@ function handleRemoveConnection() {
           <v-messages color="red" :messages="newConnectionErrorMessage"
             :active="!!newConnectionErrorMessage"></v-messages>
           <v-btn color="primary" @click="saveNewConnection">Save</v-btn>
-          <v-btn @click="showAddConnectionModal = false">Cancel</v-btn>
+          <v-btn @click="hideConnectionModal()">Cancel</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

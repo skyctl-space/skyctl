@@ -1,6 +1,8 @@
 #[cfg(target_os = "macos")]
 mod corelocation;
 
+mod asiairdiscovery;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -23,8 +25,10 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        // .invoke_handler(tauri::generate_handler![
-        // ])
+        .invoke_handler(tauri::generate_handler![
+            asiairdiscovery::start_asiair_discovery,
+            asiairdiscovery::stop_asiair_discovery,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
