@@ -28,6 +28,13 @@ export interface Connection {
     host: string;
 }
 
+export interface TelescopeConnection {
+    config: Connection;
+    configIdx: number;
+    connected: boolean;
+};
+
+
 export class Settings {
     public checkUpdate: boolean;
     public sites: Site[] = [];

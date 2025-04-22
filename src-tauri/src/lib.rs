@@ -1,7 +1,14 @@
+#![feature(portable_simd)]
+
 #[cfg(target_os = "macos")]
 mod corelocation;
 
 mod asiairdiscovery;
+mod stf;
+mod stretch;
+mod debayer;
+mod downsample;
+mod rawimage;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -28,6 +35,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             asiairdiscovery::start_asiair_discovery,
             asiairdiscovery::stop_asiair_discovery,
+            stf::load_and_emit_fits_png
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, provide } from 'vue'
 import { settings, saveSettings } from "./store";
-import { Connection, ConnectionType } from "./types";
+import { Connection, ConnectionType, TelescopeConnection } from "./types";
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";
+
+import ASIAirMainView from "./ASIAirMainView.vue"
+import INDIMainView from "./IndiMainView.vue";
+import AlpacaMainView from "./AlpacaMainView.vue";
+import SeeStarMainView from "./SeeStarMainView.vue";
 
 async function startASIAIRDiscovery() {
   await invoke("start_asiair_discovery");
@@ -26,13 +31,9 @@ listen("discovered_device", (event) => {
 const detectedASIAIRDevices = ref<ASIAIRDevice[]>([
 ]);
 
-interface TelescopeConnection {
-  config: Connection;
-  configIdx: number;
-  connected: boolean;
-};
-
 const telescopes = ref<TelescopeConnection[]>([])
+
+provide('telescopes', telescopes);
 
 function updateTelescopes() {
   if (settings.connections === undefined) {
@@ -120,7 +121,7 @@ function removeConnection(index: number) {
     if (index == maximizedIndex.value) {
       toggleMaximize(index);
     }
-
+    
     settings.connections.splice(index, 1);
     saveSettings();
     updateTelescopes();
@@ -164,6 +165,9 @@ function handleRemoveConnection() {
               <v-list-item>
                 <v-btn prepend-icon="mdi-delete" text="Remove" @click="confirmRemoveConnection(telescope.configIdx)" />
               </v-list-item>
+              <v-list-item v-if="telescope.connected">
+                <v-btn prepend-icon="mdi-cancel" text="Disconnect" @click="telescope.connected = false" />
+              </v-list-item>
             </v-list>
           </v-menu>
 
@@ -171,17 +175,17 @@ function handleRemoveConnection() {
           <v-spacer></v-spacer>
           <span>{{ telescope.config.name }} ({{ telescope.config.type }})</span>
           <v-spacer></v-spacer>
-          <v-btn size="small" variant="text" icon @click="telescope.connected = !telescope.connected"
-            class="text-white">
-            <v-icon :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
-          </v-btn>
+          <v-icon :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
           <v-btn size="small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
             <v-icon>{{ maximizedIndex === i ? "mdi-arrow-collapse" : "mdi-arrow-expand" }}</v-icon>
           </v-btn>
         </v-card-title>
 
-        <v-card-text class="panel-body bg-image-card">
-          {{ telescope.config.description }}
+        <v-card-text class="panel-body pa-0 border-0">
+          <ASIAirMainView v-if="telescope.config.type === ConnectionType.ASIAIR" :telescopeIndex="i"/>
+          <INDIMainView v-if="telescope.config.type === ConnectionType.INDI" :telescopeIndex="i"/>
+          <AlpacaMainView v-if="telescope.config.type === ConnectionType.ALPACA" :telescopeIndex="i"/>
+          <SeeStarMainView v-if="telescope.config.type === ConnectionType.SEESTAR" :telescopeIndex="i"/>
         </v-card-text>
       </v-card>
     </div>
@@ -303,5 +307,9 @@ function handleRemoveConnection() {
   color: white; /* for text visibility */
   overflow: hidden;
   filter: brightness(0.4); /* Lower = darker image */
+
+  /* Create the parallax scrolling effect */
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 </style>
