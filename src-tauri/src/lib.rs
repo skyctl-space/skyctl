@@ -35,7 +35,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             asiairdiscovery::start_asiair_discovery,
             asiairdiscovery::stop_asiair_discovery,
-            stf::load_and_emit_fits_png
+            stf::load_fits_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

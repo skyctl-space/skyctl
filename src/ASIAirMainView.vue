@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { inject, ref, Ref, watch, onMounted } from 'vue'
+import { inject, ref, Ref, watch } from 'vue'
 import { TelescopeConnection } from './types'
 import { invoke } from '@tauri-apps/api/core';
-import { listen, Event } from "@tauri-apps/api/event";
+import ImageViewer from './ImageViewer.vue'
 
 const { telescopeIndex = 0 } = defineProps({
     telescopeIndex: Number
@@ -63,53 +63,24 @@ function goToPanel(index: number) {
 
 async function loadFits() {
     // Never render the preview in a resolution larger than the screen
-    await invoke('load_and_emit_fits_png', { telescopeIndex : telescopeIndex, displayWidth: window.innerWidth, displayHeight: window.innerHeight });
+    isBusy.value = true
+    await invoke('load_fits_image', { telescopeIndex: telescopeIndex, displayWidth: window.innerWidth, displayHeight: window.innerHeight });
 }
+   
 
-const canvasRefs: Record<number, HTMLCanvasElement | null> = {};
+const isBusy = ref(false)
 
-interface ImageUpdateEvent {
-    index: number;
-    data: string;
-}
+// const binModes = [
+//     { title: 'Bin1', value: 0 },
+//     { title: 'Bin2', value: 1 },
+//     { title: 'Bin3', value: 2 },
+//     { title: 'Bin4', value: 3 }
+// ]
 
-const updateImage = (event: Event<ImageUpdateEvent>) => {
-    const { index, data } = event.payload;
+// const binMode = ref(0)
 
-    if (index !== telescopeIndex) {
-        // Not for us, ignore
-        return;
-    }
+const showHistogram = ref(false)
 
-    const canvas = canvasRefs[index];
-    if (!canvas) return;
-
-    if (canvas instanceof HTMLCanvasElement) {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const img = new Image();
-
-        // This is expected to be a base64 encoded string
-        // data = 'data:image/png;base64,' + data;
-        img.src = data;
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-        };
-        img.onerror = (error) => {
-            console.error('Error loading image:', error);
-        };
-    } else {
-        console.error('Canvas ref is not an HTMLCanvasElement');
-    }
-};
-
-onMounted(async () => {
-  await listen<ImageUpdateEvent>('fits_image_updated', updateImage);
-});
 </script>
 
 <template>
@@ -117,16 +88,13 @@ onMounted(async () => {
 
         <!-- v-window with 5 panels -->
         <v-window v-model="activePanel" direction="vertical" class="fill-height pa-0 border-0 window-container">
-            <v-window-item v-for="panel in panelData" class="fill-height pa-0 border-0">
+            <v-window-item v-for="(panel, index) in panelData" class="fill-height pa-0 border-0">
                 <div class="window-item-container fill-height d-flex flex-column position-relative overflow-hidden">
                     <!-- Watermark inside each item -->
                     <div class="watermark-text">{{ panel.title }}</div>
                     <!-- <v-img v-if="index === 0" src="/gaia_milkyway.jpg" class="flex-grow-1 w-100 h-100 pa-0 ma-0" 
                     </v-img> -->
-
-                    <div class="canvas-wrapper fill-height fill-width">
-                        <canvas :ref="el => canvasRefs[telescopeIndex] = el as HTMLCanvasElement" class="fits-canvas"></canvas>
-                    </div>
+                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" v-if="index === 0"/>
                 </div>
             </v-window-item>
 
@@ -138,7 +106,7 @@ onMounted(async () => {
                                 telescopes?.[telescopeIndex]?.config?.host }}...</p>
                             <p v-else>You are not connected to the ASIAir at {{
                                 telescopes?.[telescopeIndex]?.config?.host
-                            }}</p>
+                                }}</p>
                         </v-card-text>
                     </template>
                     <template v-slot:actions>
@@ -156,12 +124,24 @@ onMounted(async () => {
 
         <!-- Absolute Status Bar -->
         <v-sheet class="status-bar" elevation="6">
-            <span>Status: Connected</span>
-            <span>ASIAIR @ 192.168.1.2</span>
+            <!-- <v-menu v-model="menu" :close-on-content-click="false" location="end">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props">
+                        ASI 2600MC Bin1 (1.0 °C)
+                    </v-btn>
+                </template>
+            </v-menu> -->
+            <v-spacer/>
+            <v-spacer/>
+            <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
         </v-sheet>
 
         <v-btn class="floating-btn" icon @click="loadFits()">
             <v-icon>mdi-refresh</v-icon>
+        </v-btn>
+
+        <v-btn class="floating-btn-histogram" icon @click="showHistogram = !showHistogram">
+            <v-icon>mdi-chart-histogram</v-icon>
         </v-btn>
 
         <v-speed-dial location="left center" transition="fade-transition">
@@ -184,16 +164,23 @@ onMounted(async () => {
 
 <style scoped>
 .fits-canvas {
-  width: 100%;
-  height: 100%;
-  height: auto;
-  display: block;
-  background: black;
+    width: 100%;
+    height: 100%;
+    height: auto;
+    display: block;
+    background: black;
 }
 
 .floating-btn {
     position: absolute;
     top: 70px;
+    right: 16px;
+    z-index: 999;
+}
+
+.floating-btn-histogram {
+    position: absolute;
+    top: 170px;
     right: 16px;
     z-index: 999;
 }
@@ -205,15 +192,15 @@ onMounted(async () => {
     right: 0;
     height: 40px;
     padding: 0 16px;
-    background-color: rgba(50, 50, 50, 0.2);
+    background-color: rgba(50, 50, 50, 0.6);
     /* Semi-transparent dark background */
     color: white;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    pointer-events: none;
+    /* pointer-events: none; */
     /* Makes it "pass through" mouse events unless needed */
-    z-index: 9;
+    /* z-index: 9; */
     /* Below Vuetify dialogs (which are typically z-index 10+) */
 }
 
@@ -247,7 +234,7 @@ onMounted(async () => {
     font-weight: bold;
     color: rgba(0, 0, 0, 0.05);
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
     white-space: nowrap;
     text-align: center;
 }

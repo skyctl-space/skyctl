@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebGL2 Float32 Texture</title>
+  <style>canvas { border: 1px solid black; }</style>
+</head>
+<body>
+<canvas id="glcanvas" width="1024" height="768"></canvas>
+<script>
+const canvas = document.getElementById("glcanvas");
+const gl = canvas.getContext("webgl2");
+
+if (!gl) {
+  alert("WebGL2 not supported");
+}
+
+const width = canvas.width;
+const height = canvas.height;
+
+// Create a Float32Array with RGBA values (0.0 - 1.0)
+const floatData = new Float32Array(width * height * 4);
+for (let i = 0; i < width * height; i++) {
+    const offset = i * 4;
+    floatData[offset + 0] = Math.random(); // Red
+    floatData[offset + 1] = Math.random(); // Green
+    floatData[offset + 2] = Math.random(); // Blue
+    floatData[offset + 3] = 1.0;           // Alpha
+}
+
+// Vertex shader
+const vsSource = `#version 300 es
+precision mediump float;
+in vec2 a_position;
+out vec2 v_texCoord;
+void main() {
+  v_texCoord = (a_position + 1.0) * 0.5;
+  gl_Position = vec4(a_position, 0, 1);
+}`;
+
+// Fragment shader
+const fsSource = `#version 300 es
+precision highp float;
+precision highp sampler2D;
+in vec2 v_texCoord;
+out vec4 outColor;
+uniform sampler2D u_texture;
+void main() {
+  vec4 color = texture(u_texture, v_texCoord);
+  outColor = color * 1.1; // Increase brightness by 10%
+}`;
+
+function createShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error("Shader compile failed:", gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function createProgram(gl, vsSource, fsSource) {
+  const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error("Program link failed:", gl.getProgramInfoLog(program));
+    return null;
+  }
+  return program;
+}
+
+const program = createProgram(gl, vsSource, fsSource);
+gl.useProgram(program);
+
+// Vertex buffer for a full-screen quad
+const positionBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+  -1, -1, 1, -1, -1, 1,
+  -1, 1, 1, -1, 1, 1,
+]), gl.STATIC_DRAW);
+
+const aPositionLoc = gl.getAttribLocation(program, "a_position");
+gl.enableVertexAttribArray(aPositionLoc);
+gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 0, 0);
+
+// Create float32 texture (RGBA)
+const texture = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, texture);
+
+gl.texImage2D(
+  gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0,
+  gl.RGBA, gl.FLOAT, floatData
+);
+
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+// Set texture uniform
+const uTextureLoc = gl.getUniformLocation(program, "u_texture");
+gl.uniform1i(uTextureLoc, 0);
+
+// Draw
+gl.viewport(0, 0, canvas.width, canvas.height);
+gl.clearColor(0, 0, 0, 1);
+gl.clear(gl.COLOR_BUFFER_BIT);
+gl.drawArrays(gl.TRIANGLES, 0, 6);
+</script>
+</body>
+</html>

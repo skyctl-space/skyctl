@@ -1,8 +1,21 @@
 use ndarray::{Array2, Array3};
 use rayon::prelude::*;
 
-pub fn downsample(data: &Array2<f32>, target_width: usize, target_height: usize) -> Array2<f32> {
+pub fn downsample(data: &Array2<f32>, max_width: usize, max_height: usize) -> Array2<f32> {
     let (h, w) = data.dim();
+    let aspect = w as f32 / h as f32;
+    let (target_width, target_height) = if (max_width as f32 / max_height as f32) > aspect {
+        // Limited by height
+        let th = max_height.min(h);
+        let tw = ((th as f32) * aspect).round() as usize;
+        (tw, th)
+    } else {
+        // Limited by width
+        let tw = max_width.min(w);
+        let th = ((tw as f32) / aspect).round() as usize;
+        (tw, th)
+    };
+
     let scale_x = w as f32 / target_width as f32;
     let scale_y = h as f32 / target_height as f32;
 
@@ -33,8 +46,21 @@ pub fn downsample(data: &Array2<f32>, target_width: usize, target_height: usize)
         .expect("Failed to reshape downsampled array")
 }
 
-pub fn downsample_rgb(data: &Array3<f32>, target_width: usize, target_height: usize) -> Array3<f32> {
+pub fn downsample_rgb(data: &Array3<f32>, max_width: usize, max_height: usize) -> Array3<f32> {
     let (h, w, _) = data.dim();
+    let aspect = w as f32 / h as f32;
+    let (target_width, target_height) = if (max_width as f32 / max_height as f32) > aspect {
+        // Limited by height
+        let th = max_height.min(h);
+        let tw = ((th as f32) * aspect).round() as usize;
+        (tw, th)
+    } else {
+        // Limited by width
+        let tw = max_width.min(w);
+        let th = ((tw as f32) / aspect).round() as usize;
+        (tw, th)
+    };
+
     let scale_x = w as f32 / target_width as f32;
     let scale_y = h as f32 / target_height as f32;
 
