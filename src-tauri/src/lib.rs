@@ -5,7 +5,6 @@ mod corelocation;
 
 mod asiairdiscovery;
 mod stf;
-mod stretch;
 mod debayer;
 mod downsample;
 mod rawimage;

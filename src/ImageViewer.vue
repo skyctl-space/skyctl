@@ -17,15 +17,16 @@
                 </v-col>
             </v-row>
         </v-row>
-        <v-row dense no-gutters>
-            <v-col cols="2">
-                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="mb-2" @click="resetStretch">Reset</v-btn>
+        <v-row dense no-gutters class="mt-2">
+            <v-col cols="2" class="d-flex align-center justify-center">
+                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="ml-2 mr-2" @click="resetStretch">Reset</v-btn>
             </v-col>
-            <v-col cols="2">
-                <v-btn size="x-small" prepend-icon="mdi-chart-histogram" block class="mb-2"
-                    :variant="logScale ? 'flat' : 'outlined'" @click="toggleLogScale">Log Scale</v-btn>
+            <v-col cols="1"/>
+            <v-col cols="2" class="d-flex align-center justify-center">
+                <v-btn size="x-small" prepend-icon="mdi-chart-histogram" block class="ml-2 mr-2"
+                    :variant="logScale ? 'outlined' : 'flat'" @click="toggleLogScale">Log Scale</v-btn>
             </v-col>
-            <v-col cols="2"></v-col>
+            <v-col cols="1"></v-col>
             <v-col cols="6">
                 <v-row dense justify="end">
                     <v-col cols="4">
@@ -53,59 +54,48 @@
 </template>
 
 <script setup lang="ts">
+// --- Imports ---
 import { ref, onMounted, watch } from 'vue';
 import { listen, Event } from '@tauri-apps/api/event';
 
-// --- ResizeObserver for fits-canvas ---
-function useResizeCanvasToParent(canvasRef: () => HTMLCanvasElement | null) {
-    let resizeObserver: ResizeObserver | null = null;
-    onMounted(() => {
-        const canvas = canvasRef();
-        if (!canvas || !canvas.parentElement) return;
-        function resize() {
-            const parent = canvas.parentElement;
-            const dpr = window.devicePixelRatio || 1;
-            const width = parent.clientWidth;
-            const height = parent.clientHeight;
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-        }
-        resizeObserver = new ResizeObserver(resize);
-        resizeObserver.observe(canvas.parentElement);
-        resize();
-    });
-}
-
+// --- Props and Models ---
+// Props received from parent
 const props = defineProps({
     telescopeIndex: { type: Number, required: true },
     showHistogram: { type: Boolean, default: true },
 });
-
+// v-model for busy state
 const busy = defineModel<boolean>('busy');
 
+// --- Canvas and Histogram References ---
+// References to canvas and histogram elements for each telescope index
 const canvasRefs = ref<Record<number, HTMLCanvasElement | null>>({});
 const histogramRefs = ref<Record<number, HTMLCanvasElement | null>>({});
+
+// --- Stretch Parameters and Stats ---
+// Per-channel stretch parameters
 const stretchParamsR = ref({ c0: 0, c1: 1, m: 0.5 });
 const stretchParamsG = ref({ c0: 0, c1: 1, m: 0.5 });
 const stretchParamsB = ref({ c0: 0, c1: 1, m: 0.5 });
+// Image statistics
 const stats = ref({ min: 0, max: 0, avg: 0 });
 const logScale = ref(false);
 
-// --- Stretch and channel parameters ---
+// --- Stretch and Channel Parameters ---
 const targetBkg = ref(0.25);
 const shadowsClip = ref(-1.25);
-
 const channelParams = ref([
     { median: 0, avg_dev: 0, max: 0 }, // R
     { median: 0, avg_dev: 0, max: 0 }, // G
     { median: 0, avg_dev: 0, max: 0 }, // B
 ]);
 
+// --- Loaded Image Dimensions ---
 const loadedImageHeight = ref(0);
 const loadedImageWith = ref(0);
 
+// --- Watchers ---
+// Watch for changes in stretch controls and update image
 watch([
     targetBkg,
     shadowsClip
@@ -115,20 +105,17 @@ watch([
         const avg_dev = channelParams.value[i].avg_dev;
         const max = channelParams.value[i].max;
         const { c0, c1, m } = autoStretchParams(median, avg_dev, max, tBkg, sClip);
-        // Update stretchParamsR/G/B for renderImage
         if (i === 0) stretchParamsR.value = { c0, c1, m };
         if (i === 1) stretchParamsG.value = { c0, c1, m };
         if (i === 2) stretchParamsB.value = { c0, c1, m };
     }
-
     updateImageUniformsAndRedraw(props.telescopeIndex);
 });
 
-// Floating controls position and drag state
+// --- Floating Controls (Histogram) Position and Drag State ---
 const controlsPos = ref({ x: 40, y: 40 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
-
 function onControlsMouseDown(e: MouseEvent) {
     dragging.value = true;
     dragOffset.value = {
@@ -149,15 +136,40 @@ function onControlsMouseUp() {
     window.removeEventListener('mouseup', onControlsMouseUp);
 }
 
+// --- Stretch Controls ---
 function resetStretch() {
     targetBkg.value = 0.25;
     shadowsClip.value = -1.25;
+    logScale.value = false;
 }
-
 function toggleLogScale() {
     logScale.value = !logScale.value;
-
     renderHistogram(props.telescopeIndex);
+}
+
+// --- Histogram Drawing and Data ---
+const bins = 256;
+const rBins = new Uint32Array(bins);
+const gBins = new Uint32Array(bins);
+const bBins = new Uint32Array(bins);
+
+function smoothBins(bins: Uint32Array, window: number = 3): Float32Array {
+    // Simple moving average smoothing
+    const smoothed = new Float32Array(bins.length);
+    const half = Math.floor(window / 2);
+    for (let i = 0; i < bins.length; ++i) {
+        let sum = 0;
+        let count = 0;
+        for (let j = -half; j <= half; ++j) {
+            const idx = i + j;
+            if (idx >= 0 && idx < bins.length) {
+                sum += bins[idx];
+                count++;
+            }
+        }
+        smoothed[i] = sum / count;
+    }
+    return smoothed;
 }
 
 function renderHistogram(index: number) {
@@ -167,8 +179,12 @@ function renderHistogram(index: number) {
     const ctx = histogramCanvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, histogramCanvas.width, histogramCanvas.height);
-    const maxVal = Math.max(...rBins, ...gBins, ...bBins, 1);
-    function drawLine(color: string, binsArr: Uint32Array) {
+    // Smooth the bins before drawing
+    const rSmoothed = smoothBins(rBins, 5);
+    const gSmoothed = smoothBins(gBins, 5);
+    const bSmoothed = smoothBins(bBins, 5);
+    const maxVal = Math.max(...rSmoothed, ...gSmoothed, ...bSmoothed, 1);
+    function drawLine(color: string, binsArr: Float32Array) {
         if (!ctx) return;
         if (!histogramCanvas) return;
         ctx.beginPath();
@@ -189,17 +205,12 @@ function renderHistogram(index: number) {
         }
         ctx.stroke();
     }
-
-    drawLine('red', rBins);
-    drawLine('green', gBins);
-    drawLine('blue', bBins);
+    drawLine('red', rSmoothed);
+    drawLine('green', gSmoothed);
+    drawLine('blue', bSmoothed);
 }
 
-const bins = 256;
-const rBins = new Uint32Array(bins);
-const gBins = new Uint32Array(bins);
-const bBins = new Uint32Array(bins);
-
+// --- Canvas Resolution Helper ---
 function ensureCanvasResolution(canvas: HTMLCanvasElement) {
     const dpr = window.devicePixelRatio || 1;
     const displayWidth = Math.round(canvas.clientWidth * dpr);
@@ -210,22 +221,19 @@ function ensureCanvasResolution(canvas: HTMLCanvasElement) {
     }
 }
 
+// --- Histogram Calculation ---
 function updateHistogram(index: number) {
     const imgW = loadedImageWith.value;
     const imgH = loadedImageHeight.value;
-
     const canvas = canvasRefs.value[index];
     if (!canvas) return;
-
     const canvasW = canvas.width;
     const canvasH = canvas.height;
-
     const gl = canvas.getContext('webgl2');
     if (!gl) return;
     // Read pixels from the WebGL canvas
     const pixels = new Uint8Array(canvasW * canvasH * 4);
     gl.readPixels(0, 0, canvasW, canvasH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-
     // Compute the drawn image rectangle (preserving aspect ratio)
     const imgAspect = imgW / imgH;
     const canvasAspect = canvasW / canvasH;
@@ -241,7 +249,6 @@ function updateHistogram(index: number) {
         offsetX = 0;
         offsetY = (canvasH - drawHeight) / 2;
     }
-
     rBins.fill(0);
     gBins.fill(0);
     bBins.fill(0);
@@ -263,17 +270,15 @@ function updateHistogram(index: number) {
             }
         }
     }
-
     renderHistogram(index);
 }
 
-// --- Histogram hover state ---
+// --- Histogram Hover State ---
 const hoveredBin = ref<number | null>(null);
 const hoveredR = ref<number | null>(null);
 const hoveredG = ref<number | null>(null);
 const hoveredB = ref<number | null>(null);
 const histogramTooltip = ref<{ x: number; y: number } | null>(null);
-
 function onHistogramMouseMove(e: MouseEvent) {
     const histogramCanvas = histogramRefs.value[props.telescopeIndex];
     if (!histogramCanvas) return;
@@ -295,7 +300,6 @@ function onHistogramMouseMove(e: MouseEvent) {
     hoveredB.value = bBins[bin];
     histogramTooltip.value = { x, y };
 }
-
 function onHistogramMouseLeave() {
     hoveredBin.value = null;
     hoveredR.value = null;
@@ -304,9 +308,49 @@ function onHistogramMouseLeave() {
     histogramTooltip.value = null;
 }
 
-// --- WebGL state cache ---
+// --- WebGL State Cache ---
 const glStates: Record<number, any> = {};
 
+// --- Canvas Resize Helper ---
+function useResizeCanvasToParent(canvasRef: () => HTMLCanvasElement | null) {
+    let resizeObserver: ResizeObserver | null = null;
+    onMounted(() => {
+        const canvas = canvasRef();
+        if (!canvas || !canvas.parentElement) return;
+        function resize() {
+            if (!canvas) return;
+            const parent = canvas.parentElement;
+            if (!parent) return;
+            const dpr = window.devicePixelRatio || 1;
+            const width = parent.clientWidth;
+            const height = parent.clientHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        }
+        resizeObserver = new ResizeObserver(resize);
+        resizeObserver.observe(canvas.parentElement);
+        resize();
+    });
+}
+
+// --- Event Interface ---
+interface image_update_event {
+    index: number;
+    image_data: {
+        width: number;
+        height: number;
+        pixels: Uint16Array,
+        stats: [
+            { min: number; max: number; avg: number; median: number; avg_dev: number },
+            { min: number; max: number; avg: number; median: number; avg_dev: number },
+            { min: number; max: number; avg: number; median: number; avg_dev: number },
+        ]
+    };
+}
+
+// --- Main Mount Logic ---
 onMounted(() => {
     // Build GL state for each canvas on mount
     const canvas = canvasRefs.value[props.telescopeIndex];
@@ -403,21 +447,17 @@ onMounted(() => {
         rC0Location, rC1Location, rMLocation, gC0Location, gC1Location, gMLocation, bC0Location, bC1Location, bMLocation,
         texture
     };
-
     // Attach histogram hover event listeners
     const histogramCanvas = histogramRefs.value[props.telescopeIndex];
     if (histogramCanvas) {
         histogramCanvas.addEventListener('mousemove', onHistogramMouseMove);
         histogramCanvas.addEventListener('mouseleave', onHistogramMouseLeave);
     }
-
     // Attach ResizeObserver to fits-canvas
     useResizeCanvasToParent(() => canvasRefs.value[props.telescopeIndex]);
-
     // Listen to fits_image_updated event using Tauri's event system
     listen<image_update_event>('fits_image_updated', (event: Event<image_update_event>) => {
         const { index, image_data } = event.payload;
-
         if (index === props.telescopeIndex) {
             // Compute auto-stretch parameters
             if (!image_data.stats || image_data.stats.length < 3) {
@@ -436,7 +476,6 @@ onMounted(() => {
                 const { c0, c1, m } = autoStretchParams(image_data.stats[2].median, image_data.stats[2].avg_dev, image_data.stats[2].max);
                 stretchParamsB.value = { c0, c1, m };
             }
-
             // Set per-channel median and avg_dev
             for (let i = 0; i < 3; ++i) {
                 channelParams.value[i].median = image_data.stats[i].median;
@@ -444,11 +483,30 @@ onMounted(() => {
                 channelParams.value[i].max = image_data.stats[i].max;
             }
 
-            renderImage(index, image_data.width, image_data.height, image_data.pixels);
+            // Convert Uint16Array to normalized Float32Array (per channel)
+            let floatPixels: Float32Array;
+            if (image_data.stats && image_data.stats.length === 3) {
+                floatPixels = new Float32Array(image_data.pixels.length);
+                const maxR = image_data.stats[0].max || 1;
+                const maxG = image_data.stats[1].max || 1;
+                const maxB = image_data.stats[2].max || 1;
+                for (let i = 0; i < image_data.pixels.length; i += 3) {
+                    floatPixels[i] = image_data.pixels[i] / maxR;
+                    floatPixels[i + 1] = image_data.pixels[i + 1] / maxG;
+                    floatPixels[i + 2] = image_data.pixels[i + 2] / maxB;
+
+                    if (i < 10) { // Debugging: log first 10 pixels
+                        console.log('Pixel:', i, 'R:', floatPixels[i], 'G:', floatPixels[i + 1], 'B:', floatPixels[i + 2]);
+                    }
+                }
+            } else {
+                floatPixels = new Float32Array(image_data.pixels);
+            }
+
+            renderImage(index, image_data.width, image_data.height, floatPixels);
             loadedImageHeight.value = image_data.height;
             loadedImageWith.value = image_data.width;
             updateHistogram(index);
-
             // Update stats
             const combinedStats = image_data.stats.reduce(
                 (acc, stat) => {
@@ -460,18 +518,17 @@ onMounted(() => {
                 },
                 { min: Infinity, max: -Infinity, sum: 0, count: 0 }
             );
-
             stats.value = {
                 min: combinedStats.min,
                 max: combinedStats.max,
                 avg: combinedStats.sum / combinedStats.count
             };
-
             busy.value = false;
         }
     });
 });
 
+// --- WebGL Image Redraw and Uniform Update ---
 function updateImageUniformsAndRedraw(index: number) {
     const canvas = canvasRefs.value[index];
     if (!canvas) return;
@@ -479,7 +536,6 @@ function updateImageUniformsAndRedraw(index: number) {
     if (!gl) return;
     const state = glStates[index];
     if (!state) return;
-
     gl.uniform1f(state.rC0Location, stretchParamsR.value.c0);
     gl.uniform1f(state.rC1Location, stretchParamsR.value.c1);
     gl.uniform1f(state.rMLocation, stretchParamsR.value.m);
@@ -491,10 +547,10 @@ function updateImageUniformsAndRedraw(index: number) {
     gl.uniform1f(state.bMLocation, stretchParamsB.value.m);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
-
     updateHistogram(props.telescopeIndex);
 }
 
+// --- WebGL Image Rendering ---
 function renderImage(index: number, width: number, height: number, pixels: Float32Array) {
     const canvas = canvasRefs.value[index];
     if (!canvas) return;
@@ -509,18 +565,13 @@ function renderImage(index: number, width: number, height: number, pixels: Float
     const imgH = height;
     const canvasW = canvas.width;
     const canvasH = canvas.height;
-
     // Calculate scale to fit image fully inside the canvas (contain, never clipped)
     const scale = Math.min(canvasW / imgW, canvasH / imgH);
     const drawWidth = imgW * scale;
     const drawHeight = imgH * scale;
-    // Center the image
-    const offsetX = (canvasW - drawWidth) / 2;
-    const offsetY = (canvasH - drawHeight) / 2;
     // Set scale for vertex shader (normalized to [-1,1] clip space)
     const scaleX = drawWidth / canvasW;
     const scaleY = drawHeight / canvasH;
-
     const state = glStates[index];
     if (!state) return;
     gl.useProgram(state.program);
@@ -532,7 +583,7 @@ function renderImage(index: number, width: number, height: number, pixels: Float
     gl.bindTexture(gl.TEXTURE_2D, state.texture);
     gl.texImage2D(
         gl.TEXTURE_2D, 0, gl.RGB32F, imgW, imgH, 0,
-        gl.RGB, gl.FLOAT, new Float32Array(pixels)
+        gl.RGB, gl.FLOAT, pixels
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -552,6 +603,7 @@ function renderImage(index: number, width: number, height: number, pixels: Float
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
+// --- Auto-Stretch Parameter Calculation ---
 function autoStretchParams(
     median: number, avgDev: number, max: number,
     targetBkg = 0.25,
@@ -563,30 +615,13 @@ function autoStretchParams(
         if (x === m) return 0.5;
         return ((m - 1) * x) / (((2 * m - 1) * x) - m);
     }
-
     // Normalize median and avgDev
     const normalizedMedian = median / max;
     const normalizedAvgDev = avgDev / max;
-
     const c0 = Math.max(0, Math.min(1, normalizedMedian + (shadowsClip * normalizedAvgDev)));
     const c1 = 1;
-
     const m = mtf(targetBkg, normalizedMedian - c0);
     return { c0, c1, m };
-}
-
-interface image_update_event {
-    index: number;
-    image_data: {
-        width: number;
-        height: number;
-        pixels: Float32Array;
-        stats: [
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-        ]
-    };
 }
 </script>
 

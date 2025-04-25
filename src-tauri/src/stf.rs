@@ -29,7 +29,6 @@ pub async fn load_fits_image(
     {
         let mut raw_image_map = RAW_IMAGE_TABLE.write().map_err(|e| e.to_string())?;
         raw_image_map.insert(telescope_index, Box::new(raw_image));
-        log::info!("RawImage for telescope index {} overridden in the hash table", telescope_index);
     }
 
     // Retrieve the raw arrays and determine if the image is mono or OSC

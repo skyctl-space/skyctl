@@ -7,10 +7,11 @@ use crate::{
 use fitsio::FitsFile;
 use ndarray::{s, Array, Array2, Ix2, Ix3, IxDyn};
 use rayon::join;
-use crate::stretch::calc_channel_stats;
+use std::simd::{f32x8};
+use std::simd::num::SimdFloat;
 
 #[derive(serde::Serialize)]
-pub struct stat{
+pub struct Stat{
     min: f32,
     max: f32,
     avg: f32,
@@ -22,28 +23,88 @@ pub struct stat{
 pub struct RawRGBImage {
     pub width: u32,
     pub height: u32,
-    pub pixels: Vec<f32>,
-    pub stats: Vec<stat>,
+    pub pixels: Vec<u16>,
+    pub stats: Vec<Stat>,
 }
 
 pub struct RawImage {
     pub bayer_pattern: BayerPattern,
-    pub raw_image: Array<f32, Ix2>,
-    pub debayered_image: Option<Array<f32, Ix3>>,
+    pub raw_image: Array<u32, Ix2>,
+    pub debayered_image: Option<Array<u32, Ix3>>,
     pub downsampled: bool,
     pub downsampled_width: usize,
     pub downsampled_height: usize,
 }
 
+fn median(data: &Array2<u32>) -> f32 {
+    let len = data.len();
+    if len == 0 {
+        return 0.0;
+    }
+    let mid = len / 2;
+    let mut v: Vec<u32> = data.iter().copied().collect();
+    let (_, median, _) = v.select_nth_unstable(mid);
+    *median as f32
+}
+
+
+fn calc_channel_stats(data: &Array2<u32>) -> Stat {
+    let median_val = median(data);
+    let len = data.len();
+    let n = len as f32;
+    let data_flat = data.as_slice().unwrap();
+    let mut sum = 0.0f32;
+    let mut min_val = f32::MAX;
+    let mut max_val = f32::MIN;
+    let mut sum_val = 0.0f32;
+    let mut i = 0;
+    let simd_width = 8; // Hardcoded for f32x8
+    let median_simd = f32x8::splat(median_val);
+    while i + simd_width <= len {
+        let chunk_f = f32x8::from_array([
+            data_flat[i] as f32,
+            data_flat[i+1] as f32,
+            data_flat[i+2] as f32,
+            data_flat[i+3] as f32,
+            data_flat[i+4] as f32,
+            data_flat[i+5] as f32,
+            data_flat[i+6] as f32,
+            data_flat[i+7] as f32,
+        ]);
+        let dev = (chunk_f - median_simd).abs();
+        sum += dev.reduce_sum();
+        min_val = min_val.min(chunk_f.reduce_min());
+        max_val = max_val.max(chunk_f.reduce_max());
+        sum_val += chunk_f.reduce_sum();
+        i += simd_width;
+    }
+    while i < len {
+        let v_f = data_flat[i] as f32;
+        sum += (v_f - median_val).abs();
+        min_val = min_val.min(v_f);
+        max_val = max_val.max(v_f);
+        sum_val += v_f;
+        i += 1;
+    }
+    let avg_dev = sum / n;
+    let avg = sum_val / n;
+    Stat {
+        median: median_val,
+        avg_dev,
+        min: min_val.round(),
+        max: max_val.round(),
+        avg
+    }
+}
+
 impl RawImage {
     pub fn from_fits(mut fits: FitsFile) -> Result<Self, String> {
         let hdu = fits.primary_hdu().map_err(|e| e.to_string())?;
-        let raw_image: Array<f32, Ix2> = hdu
-            .read_image::<Array<f32, IxDyn>>(&mut fits)
+        let raw_image_u32: Array<u32, Ix2> = hdu
+            .read_image::<Array<u32, IxDyn>>(&mut fits)
             .map_err(|e| e.to_string())?
             .into_dimensionality::<Ix2>()
             .map_err(|_| "Failed to convert to 2D array".to_string())?;
-
         let bayer_pattern = 
             match hdu.read_key::<String>(&mut fits, "BAYERPAT").unwrap_or_else(|_| "".to_string()).to_uppercase().as_str() {
             "RGGB" => BayerPattern::RGGB,
@@ -52,15 +113,13 @@ impl RawImage {
             "GBRG" => BayerPattern::GBRG,
             _ => BayerPattern::NONE,
         };
-
         Ok(Self {
-            raw_image,
+            raw_image: raw_image_u32,
             bayer_pattern: bayer_pattern,
             debayered_image: None,
             downsampled: false,
             downsampled_width: 0,
             downsampled_height: 0,
-            // stretch: Stretch::new(0.25, -1.5),
         })
     }
 
@@ -113,12 +172,13 @@ impl RawImage {
     pub fn get_raw_image(&self) -> RawRGBImage {
         if self.bayer_pattern == BayerPattern::NONE {
             let (height, width) = self.raw_image.dim();
-            let mut rgb: Vec<f32> = Vec::with_capacity(width * height * 3);
+            let mut rgb: Vec<u16> = Vec::with_capacity(width * height * 3);
             let stats = self.calculate_stats();
 
-            self.raw_image.iter().for_each(|&v| {
-                rgb.extend_from_slice(&[v / stats[0].max, v / stats[1].max, v / stats[2].max]); // R, G, B
-            });
+            for &v in self.raw_image.iter() {
+                let v16 = v.min(u16::MAX as u32) as u16;
+                rgb.extend_from_slice(&[v16, v16, v16]);
+            }
     
             return RawRGBImage {
                 width: width.try_into().unwrap(),
@@ -129,16 +189,15 @@ impl RawImage {
         } else {
             if let Some(debayered_image) = self.debayered_image.as_ref() {
                 let (height, width, _) = debayered_image.dim();
-                let mut rgb: Vec<f32>  = Vec::with_capacity(width * height * 3);
+                let mut rgb: Vec<u16>  = Vec::with_capacity(width * height * 3);
                 let stats = self.calculate_stats();
 
                 for pixel in debayered_image.outer_iter() {
                     for rgb_triplet in pixel.outer_iter() {
-                        rgb.extend_from_slice(&[
-                            rgb_triplet[0] / stats[0].max,
-                            rgb_triplet[1] / stats[1].max,
-                            rgb_triplet[2] / stats[2].max
-                        ]);
+                        let r = rgb_triplet[0].min(u16::MAX as u32) as u16;
+                        let g = rgb_triplet[1].min(u16::MAX as u32) as u16;
+                        let b = rgb_triplet[2].min(u16::MAX as u32) as u16;
+                        rgb.extend_from_slice(&[r, g, b]);
                     }
                 }
 
@@ -150,12 +209,13 @@ impl RawImage {
                 };
             } else {
                 let (height, width) = self.raw_image.dim();
-                let mut rgb: Vec<f32>  = Vec::with_capacity(width * height * 3);
+                let mut rgb: Vec<u16>  = Vec::with_capacity(width * height * 3);
                 let stats = self.calculate_stats();
     
-                self.raw_image.iter().for_each(|&v| {
-                    rgb.extend_from_slice(&[v / stats[0].max, v / stats[1].max, v / stats[2].max]); // R, G, B
-                });
+                for &v in self.raw_image.iter() {
+                    let v16 = v.min(u16::MAX as u32) as u16;
+                    rgb.extend_from_slice(&[v16, v16, v16]);
+                }
         
                 return RawRGBImage {
                     width: width.try_into().unwrap(),
@@ -167,26 +227,19 @@ impl RawImage {
         }
      }
 
-     fn calculate_stats(&self) -> Vec<stat> {
+     fn calculate_stats(&self) -> Vec<Stat> {
         let mut results = vec![];
-
-        let calculate_chanel = |data: &Array2<f32>| -> stat {
-            let (median, avg_dev, min, max, avg) = calc_channel_stats(data);
-
-            stat { min, max, avg, median, avg_dev}
-        };
-
         let start_time = std::time::Instant::now();
         if self.bayer_pattern == BayerPattern::NONE {
-            results.push(calculate_chanel(&self.raw_image));
+            results.push(calc_channel_stats(&self.raw_image));
         } else {
             if let Some(debayered_image) = &self.debayered_image {
                 let (r, (g, b)) = join(
-                    || calculate_chanel(&debayered_image.slice(s![.., .., 0]).to_owned()),
+                    || calc_channel_stats(&debayered_image.slice(s![.., .., 0]).to_owned()),
                     || {
                         join(
-                            || calculate_chanel(&debayered_image.slice(s![.., .., 1]).to_owned()),
-                            || calculate_chanel(&debayered_image.slice(s![.., .., 2]).to_owned()),
+                            || calc_channel_stats(&debayered_image.slice(s![.., .., 1]).to_owned()),
+                            || calc_channel_stats(&debayered_image.slice(s![.., .., 2]).to_owned()),
                         )
                     },
                 );
@@ -197,7 +250,6 @@ impl RawImage {
         }
         let elapsed_time = start_time.elapsed();
         log::info!("Stats took: {:?}", elapsed_time);
-
         results
      }
  
