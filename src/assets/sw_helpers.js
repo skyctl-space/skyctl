@@ -6,52 +6,37 @@
 // The terms of the AGPL v3 license can be found in the main directory of this
 // repository.
 
-import Vue from 'vue'
+import * as Vue from 'vue'
 import _ from 'lodash'
-import StelWebEngine from '@/assets/js/stellarium-web-engine.js'
 import Moment from 'moment'
 
-var DDDate = Date
-DDDate.prototype.getJD = function () {
-  return (this.getTime() / 86400000) + 2440587.5
-}
-
-DDDate.prototype.setJD = function (jd) {
-  this.setTime((jd - 2440587.5) * 86400000)
-}
-
-DDDate.prototype.getMJD = function () {
-  return this.getJD() - 2400000.5
-}
-
-DDDate.prototype.setMJD = function (mjd) {
-  this.setJD(mjd + 2400000.5)
-}
-
 const swh = {
-  initStelWebEngine: function (store, wasmFile, canvasElem, callBackOnDone) {
-    StelWebEngine({
-      wasmFile: wasmFile,
-      canvas: canvasElem,
-      translateFn: function (domain, str) {
-        return str
-        // return i18next.t(str, {ns: domain});
-      },
-      onReady: function (lstel) {
-        store.commit('replaceStelWebEngine', lstel.getTree())
-        lstel.onValueChanged(function (path, value) {
-          const tree = store.state.stel
-          _.set(tree, path, value)
-          store.commit('replaceStelWebEngine', tree)
-        })
-        Vue.prototype.$stel = lstel
-        Vue.prototype.$selectionLayer = lstel.createLayer({ id: 'slayer', z: 50, visible: true })
-        Vue.prototype.$observingLayer = lstel.createLayer({ id: 'obslayer', z: 40, visible: true })
-        Vue.prototype.$skyHintsLayer = lstel.createLayer({ id: 'skyhintslayer', z: 38, visible: true })
-        callBackOnDone()
-      }
-    })
-  },
+//   initStelWebEngine: function (store, wasmFile, canvasElem, callBackOnDone) {
+//     StelWebEngine({
+//       wasmFile: wasmFile,
+//       canvas: canvasElem,
+//       translateFn: function (domain, str) {
+//         return str
+//         // return i18next.t(str, {ns: domain});
+//       },
+//       onReady: function (lstel) {
+//         store.scommit('replaceStelWebEngine', lstel.getTree())
+//         lstel.onValueChanged(function (path, value) {
+//           const tree = store.state.stel
+//           _.set(tree, path, value)
+//           store.commit('replaceStelWebEngine', tree)
+//         })
+//         Vue.prototype.$stel = lstel
+//         Vue.prototype.$selectionLayer = lstel.createLayer({ id: 'slayer', z: 50, visible: true })
+//         Vue.prototype.$observingLayer = lstel.createLayer({ id: 'obslayer', z: 40, visible: true })
+//         Vue.prototype.$skyHintsLayer = lstel.createLayer({ id: 'skyhintslayer', z: 38, visible: true })
+//         callBackOnDone()
+//       }
+//     })
+//   },
+
+  VUE_APP_NOCTUASKY_API_SERVER : 'https://api.noctuasky.com',
+
 
   monthNames: ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -277,8 +262,9 @@ const swh = {
     return obj
   },
 
+
   lookupSkySourceByName: function (name) {
-    return fetch(process.env.VUE_APP_NOCTUASKY_API_SERVER + '/api/v1/skysources/name/' + name)
+    return fetch(swh.VUE_APP_NOCTUASKY_API_SERVER + '/api/v1/skysources/name/' + name)
       .then(function (response) {
         if (!response.ok) {
           throw response.body
@@ -293,7 +279,7 @@ const swh = {
     if (!limit) {
       limit = 10
     }
-    return fetch(process.env.VUE_APP_NOCTUASKY_API_SERVER + '/api/v1/skysources/?q=' + str + '&limit=' + limit)
+    return fetch(swh.VUE_APP_NOCTUASKY_API_SERVER + '/api/v1/skysources/?q=' + str + '&limit=' + limit)
       .then(function (response) {
         if (!response.ok) {
           throw response.body

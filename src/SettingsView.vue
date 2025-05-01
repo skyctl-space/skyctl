@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue';
 import { useRouter } from 'vue-router';
-import { settings } from "./store";
+import { settings } from "./settings";
 import { Site } from './types';
-import { saveSettings } from "./store";
+import { saveSettings } from "./settings";
 import { formatLatitude, formatLongitude } from './utils'
 import { GeoLocation } from "./types";
 

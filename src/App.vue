@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useTheme } from 'vuetify'
 import md5 from 'crypto-js/md5'
 import { computed, inject, ref, onMounted, onUnmounted, provide } from 'vue'
-//import { invoke } from "@tauri-apps/api/core";
-import { settings, saveSettings } from "./store";
+import { settings, saveSettings } from "./settings";
+import { useStellariumStore } from './stores';
 import { listen } from '@tauri-apps/api/event';
 import { GeoLocation } from "./types";
+import { formatLatitude, formatLongitude } from './utils';
 
 const geoLocation = inject<GeoLocation>('geoLocation', {
   latitude: 0,
@@ -30,12 +30,6 @@ listen<LocationPayload>('location_update', (event) => {
   geoLocation.error = null;
 });
 
-const theme = useTheme()
-
-function toggleTheme() {
-  theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
-}
-
 const username = "Diego Dompe";
 const email = "ddompe@gmail.com";
 const gravatarUrl = computed(() => {
@@ -54,11 +48,14 @@ const siteOptions = computed(() =>
   }))
 )
 
+const stellariumStore = useStellariumStore();
+
 const selectedSite = computed({
   get() {
     if (settings.selectedSiteIdx === undefined) {
       return undefined;
     }
+
     return {
       title: settings.sites[settings.selectedSiteIdx].name,
       value: settings.selectedSiteIdx
@@ -66,10 +63,27 @@ const selectedSite = computed({
   },
   set(value) {
     console.log("Selected site index:", value);
+
+    const stel = stellariumStore.stel;
     if (value === undefined) {
       settings.selectedSiteIdx = undefined;
+      stel.observer.longitude = 0;
+      stel.observer.latitude = 0;
+      stel.observer.elevation = 0;
+      stellariumStore.currentLatitude = formatLatitude(0);
+      stellariumStore.currentLongitude = formatLongitude(0);
+      stellariumStore.currentLocation = "Default Location";
     } else {
       settings.selectedSiteIdx = value.value;
+      if (stellariumStore.stel != undefined) {
+        const site = settings.sites[settings.selectedSiteIdx];
+        stel.observer.longitude = site.longitude * stel.D2R;
+        stel.observer.latitude = site.latitude * stel.D2R;
+        stel.observer.elevation = site.elevation;
+        stellariumStore.currentLocation = site.name;
+        stellariumStore.currentLatitude = formatLatitude(site.latitude);
+        stellariumStore.currentLongitude = formatLongitude(site.longitude);
+      }
     }
     saveSettings();
   }
@@ -116,9 +130,27 @@ onMounted(() => {
     clearInterval(interval);
   });
 });
+
+
+
+const nightMode = ref(false);
+
+function toggleNightMode() {
+  nightMode.value = !nightMode.value;
+
+  const nightmodeEl = document.getElementById('nightmode');
+  if (nightmodeEl) {
+    if (window.navigator.userAgent.indexOf('Edge') > -1) {
+      nightmodeEl.style.opacity = nightMode.value ? '0.5' : '0';
+    }
+    nightmodeEl.style.visibility = nightMode.value ? 'visible' : 'hidden';
+  }
+}
+
 </script>
 
 <template>
+  <div id="nightmode"></div>
   <v-app>
     <v-app-bar image="carina_jwst.jpg" elevation="1" rounded density="compact">
       <v-app-bar-title>
@@ -137,7 +169,7 @@ onMounted(() => {
 
       <span style="color: white; margin-right: 16px;">{{ currentTime }}</span>
 
-      <v-btn icon="mdi-theme-light-dark" @click="toggleTheme()"></v-btn>
+      <v-btn icon="mdi-theme-light-dark" @click="toggleNightMode()"></v-btn>
     </v-app-bar>
 
     <v-navigation-drawer expand-on-hover rail>
@@ -162,7 +194,7 @@ onMounted(() => {
     </v-navigation-drawer>
 
     <v-main>
-      <RouterView />
+        <RouterView/>
     </v-main>
   </v-app>
 </template>
@@ -172,5 +204,17 @@ onMounted(() => {
   background-color: rgba(0, 0, 0, 0.4);
   /* White with 70% opacity */
   color: white;
+}
+
+#nightmode {
+  background: #ff2200;
+  pointer-events: none;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  z-index: 1000;
+  mix-blend-mode: multiply;
+  z-index: 10000;
+  visibility: hidden;
 }
 </style>

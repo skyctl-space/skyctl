@@ -1,4 +1,8 @@
-declare module '*.wasm' {
-  const wasmModule: any;
-  export default wasmModule;
+declare module '@/assets/js/stellarium-web-engine.js' {
+  const StelWebEngine: any;
+  export default StelWebEngine;
+}
+
+declare interface Window {
+  StelWebEngine?: any;
 }

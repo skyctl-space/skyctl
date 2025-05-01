@@ -15,12 +15,14 @@ import HomeView from "./HomeView.vue";
 import SettingsView from "./SettingsView.vue";
 import ImagesView from "./ImagesView.vue";
 import ObjectivesView from "./ObjectivesView.vue";
+import StellariumView from "./StellariumView.vue";
 import { attachConsole } from '@tauri-apps/plugin-log';
+import { createPinia } from 'pinia'
 
 // Logs from Tauri will be shown in the console
 await attachConsole();
 
-import { loadSettings } from "./store";
+import { loadSettings } from "./settings";
 
 loadSettings().then(() => {
     console.log('Settings loaded');
@@ -31,7 +33,7 @@ loadSettings().then(() => {
 const routes = [
     { path: '/', component: HomeView, name: 'home' },
     { path: '/telescopes', component: TelescopesView, name: 'telescopes' },
-    { path: '/stellarium', component: ImagesView, name: 'stellarium' },
+    { path: '/stellarium', component: StellariumView, name: 'stellarium' },
     { path: '/images', component: ImagesView, name: 'images' },
     { path: '/objectives', component: ObjectivesView, name: 'objectives' },
     { path: '/weather', component: Weather, name: 'weather' },
@@ -65,8 +67,11 @@ const geoLocation = reactive<GeoLocation>({
     error: "GeoLocation not loaded yet"
 })
 
+const pinia = createPinia()
+
 createApp(App)
     .provide("geoLocation", geoLocation)
     .use(router)
     .use(vuetify)
+    .use(pinia)
     .mount("#app");

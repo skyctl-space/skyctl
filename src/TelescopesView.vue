@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, provide } from 'vue'
-import { settings, saveSettings } from "./store";
+import { settings, saveSettings } from "./settings";
 import { Connection, ConnectionType, TelescopeConnection } from "./types";
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";

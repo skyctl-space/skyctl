@@ -39,8 +39,8 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. tell vite to ignore watching `src-tauri` and static assets
+      ignored: ["**/src-tauri/**", 'src/assets/js/**'],
     },
   },
 }));
