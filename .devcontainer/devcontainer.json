@@ -6,7 +6,9 @@
       "extensions": [
         "rust-lang.rust-analyzer",
         "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "tauri-apps.tauri-vscode",
+        "vue.volar"
       ],
       "settings": {
         "rust-analyzer.cargo.runBuildScripts": true
