@@ -12,13 +12,13 @@ mod rawimage;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(target_os = "macos")]
             {
                 log::info!("Starting CoreLocation...");
                 // Must run on main thread!
                 let main = objc2_foundation::MainThreadMarker::new().unwrap();
-                corelocation::start_location_manager(app.handle().clone(), main);
+                corelocation::start_location_manager(_app.handle().clone(), main);
             }
             Ok(())
         })

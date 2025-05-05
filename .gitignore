@@ -26,3 +26,4 @@ dist-ssr
 src/assets/js/stellarium-web-engine.js
 src/assets/js/stellarium-web-engine.wasm
 .DS_Store
+.pnpm-store

@@ -1,6 +1,16 @@
 # SkyCTL
 
-SkyCTL is a powerful and extensible application designed for astronomy enthusiasts. It integrates with Stellarium Web Engine and provides tools for managing telescopes, observing celestial objects, and analyzing astronomical data. SkyCTL offers a modern and user-friendly interface for both amateur and professional astronomers.
+![SkyCTL Logo](docs/SkyCtlLogo.png#gh-dark-mode-only)
+![SkyCTL Logo](docs/SkyCtlLogoLight.png#gh-light-mode-only)
+
+SkyCTL is an application designed for astrophography enthusiasts that allows to control multiple astophography setups remotely. It's completely open-source and has the following objectives:
+
+- Multiplatform: Windows, Mac and Linux support. Support for mobile devices is possible but not in scope.
+- Multi-target: capable of controlling remote setups over different protocols: Indi, ALPACA, ASIAIR, Seestar, etc. An objective is to easily allow integrations by new platforms.
+- Desktop Integration: Enable pipeline of image data directly over with other post-processing tools like Siril and PixInsight.
+- Quality: unlike most open source projects around astronomy we want to deliver the code with quality and minimizing regressions, so we implement a from the beggining automated test suites.
+
+It integrates with Stellarium Web Engine and provides tools for managing telescopes, observing celestial objects, and analyzing astronomical data.
 
 ## Features
 
@@ -10,57 +20,9 @@ SkyCTL is a powerful and extensible application designed for astronomy enthusias
 - **Observing Tools**: Access observing panels, target search, and selected object information.
 - **Weather Integration**: Check weather conditions for optimal observation.
 
-## Project Structure
-
-The project is organized as follows:
-
-- **`src/`**: Contains the main Vue components, utilities, and assets.
-  - `assets/`: Static assets like images and helper scripts.
-  - `stellarium-components/`: Components specific to Stellarium integration.
-  - `stores.ts`: Pinia store for managing application state.
-  - `main.ts`: Entry point for the Vue application.
-- **`public/`**: Public assets served directly, such as images and fonts.
-- **`scripts/`**: Utility scripts, including `fetch-engine-assets.js` for fetching the latest Stellarium Web Engine files.
-- **`src-tauri/`**: Tauri-specific files for building the desktop application.
-
-## Installation
-
-### Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/skyctl-space/skyctl.git
-   cd skyctl
-   ```
-
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-
-4. Start the development server:
-   ```bash
-   pnpm tauri dev
-   ```
-
-## Build
-
-To build the application for production:
-
-```bash
-pnpm build
-```
-
-This will create a production-ready build in the `dist/` directory.
-
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes and push the branch.
-4. Open a pull request.
+Contributions are welcome! Please visit our [building page](docs/Building.md) to learn how to build and modify the code.
 
 ## License
 
@@ -70,7 +32,6 @@ SkyCTL is licensed under the [AGPL License](LICENSE).
 
 - [Stellarium Web Engine](https://github.com/Stellarium/stellarium-web-engine)
 - [Vuetify](https://vuetifyjs.com/)
-- [Pinia](https://pinia.vuejs.org/)
 - [Tauri](https://tauri.app/)
 
 ## Contact

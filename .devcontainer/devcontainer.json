@@ -1,19 +1,16 @@
 {
-  "name": "Rust and npm Development Container",
-  "image": "ubuntu:20.04",
-  "features": {
-    "rust": "latest",
-    "nodejs": "lts"
-  },
-  "extensions": [
-    "rust-lang.rust-analyzer",
-    "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint"
-  ],
-  "settings": {
-    "rust-analyzer.cargo.runBuildScripts": true,
-    "editor.formatOnSave": true
-  },
-  "postCreateCommand": "npm install",
-  "remoteUser": "vscode"
+  "image": "ghcr.io/skyctl-space/devcontainer:25.05.0",
+  "containerUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "rust-analyzer.cargo.runBuildScripts": true
+      }
+    }
+  }
 }
