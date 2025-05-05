@@ -35,7 +35,7 @@ onMounted(async () => {
         core.stars.addDataSource({ url: baseUrl + 'stars/minimal', key : "minimal"});
         core.stars.addDataSource({ url: baseUrl + 'stars/base', key : "base"});
         core.stars.addDataSource({ url: baseUrl + 'stars/extended', key : "extended"});
-        core.stars.addDataSource({ url: baseUrl + 'surveys/gaia/v1', key : "gaia"});
+        core.stars.addDataSource({ url: baseUrl + 'surveys/gaia', key : "gaia"});
         core.skycultures.addDataSource({ url: baseUrl + 'skycultures/western', key: 'western' });
         core.dss.addDataSource({ url: baseUrl + 'surveys/dss/colored' });
         core.dsos.addDataSource({ url: baseUrl + 'dso/base' });
@@ -43,6 +43,19 @@ onMounted(async () => {
         core.landscapes.addDataSource({ url: baseUrl + 'landscapes/guereins', key: 'guereins' });
         core.milkyway.addDataSource({ url: baseUrl + 'surveys/milkyway' });
         core.minor_planets.addDataSource({ url: baseUrl + 'mpcorb.dat', key: 'mpc_asteroids' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/sun/v1', key: 'sun' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/moon/v1', key: 'moon' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/jupiter/v1', key: 'jupiter' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/io/v1', key: 'io' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/ganymede/v1', key: 'ganymede' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/europa/v1', key: 'europa' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/callisto/v1', key: 'callisto' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/saturn/v1', key: 'saturn' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/mars/v1', key: 'mars' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/venus/v1', key: 'venus' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/uranus/v1', key: 'uranus' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/neptune/v1', key: 'neptune' });
+        core.planets.addDataSource({ url: baseUrl + 'surveys/sso/mercury/v1', key: 'mercury' });
         core.comets.addDataSource({ url: baseUrl + 'CometEls.txt', key: 'mpc_comets' });
         core.satellites.addDataSource({ url: baseUrl + 'tle_satellite.jsonl.gz', key: 'jsonl/sat' });
         stel.setFont('regular', '/fonts/Roboto-Regular.ttf', 1.38);
