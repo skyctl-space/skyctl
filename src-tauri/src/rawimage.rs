@@ -7,8 +7,6 @@ use crate::{
 use fitsio::FitsFile;
 use ndarray::{s, Array, Array2, Ix2, Ix3, IxDyn};
 use rayon::join;
-use std::simd::{f32x8};
-use std::simd::num::SimdFloat;
 
 #[derive(serde::Serialize)]
 pub struct Stat{
@@ -47,7 +45,6 @@ fn median(data: &Array2<u32>) -> f32 {
     *median as f32
 }
 
-
 fn calc_channel_stats(data: &Array2<u32>) -> Stat {
     let median_val = median(data);
     let len = data.len();
@@ -57,35 +54,15 @@ fn calc_channel_stats(data: &Array2<u32>) -> Stat {
     let mut min_val = f32::MAX;
     let mut max_val = f32::MIN;
     let mut sum_val = 0.0f32;
-    let mut i = 0;
-    let simd_width = 8; // Hardcoded for f32x8
-    let median_simd = f32x8::splat(median_val);
-    while i + simd_width <= len {
-        let chunk_f = f32x8::from_array([
-            data_flat[i] as f32,
-            data_flat[i+1] as f32,
-            data_flat[i+2] as f32,
-            data_flat[i+3] as f32,
-            data_flat[i+4] as f32,
-            data_flat[i+5] as f32,
-            data_flat[i+6] as f32,
-            data_flat[i+7] as f32,
-        ]);
-        let dev = (chunk_f - median_simd).abs();
-        sum += dev.reduce_sum();
-        min_val = min_val.min(chunk_f.reduce_min());
-        max_val = max_val.max(chunk_f.reduce_max());
-        sum_val += chunk_f.reduce_sum();
-        i += simd_width;
-    }
-    while i < len {
-        let v_f = data_flat[i] as f32;
+
+    for &v in data_flat {
+        let v_f = v as f32;
         sum += (v_f - median_val).abs();
         min_val = min_val.min(v_f);
         max_val = max_val.max(v_f);
         sum_val += v_f;
-        i += 1;
     }
+
     let avg_dev = sum / n;
     let avg = sum_val / n;
     Stat {
@@ -93,7 +70,7 @@ fn calc_channel_stats(data: &Array2<u32>) -> Stat {
         avg_dev,
         min: min_val.round(),
         max: max_val.round(),
-        avg
+        avg,
     }
 }
 

@@ -1,5 +1,3 @@
-#![feature(portable_simd)]
-
 #[cfg(target_os = "macos")]
 mod corelocation;
 
