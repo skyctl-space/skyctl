@@ -48,12 +48,6 @@ RUN \
     cargo install tauri-cli --version '^2.0.0' --locked && \
     mv /root/.cargo/bin/cargo-tauri /usr/local/bin
 
-# Install the nightly Rust toolchain (required for SIMD features)
-RUN export CARGO_HOME=/opt/rust && \
-    rustup install nightly && \
-    rustup default nightly && \
-    rustup component add rustfmt clippy
-
 # Add a vscode user with sudo privileges
 RUN groupadd -g 1000 vscode && \
     useradd -m -u 1000 -g vscode -s /bin/bash vscode && \
