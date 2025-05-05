@@ -21,93 +21,93 @@
   </div>
 </template>
 
-<script>
-import swh from '@/assets/sw_helpers.js'
-import vClickOutside from 'v-click-outside'
-import _ from 'lodash'
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { querySkySources, cleanupOneSkySourceName, nameForSkySourceType, iconForSkySource as utilIconForSkySource, nameForSkySource as utilNameForSkySource } from '@/utils';
+import { useStellariumStore } from '@/stores';
+import _ from 'lodash';
 
-export default {
-  data: function () {
-    return {
-      autoCompleteChoices: [],
-      searchText: '',
-      lastQuery: undefined
-    }
-  },
-  props: ['value', 'floatingList'],
-  watch: {
-    searchText: function () {
-      if (this.searchText === '') {
-        this.autoCompleteChoices = []
-        this.lastQuery = undefined
-        return
-      }
-      this.refresh()
-    }
-  },
-  computed: {
-    listStyle: function () {
-      return this.floatingList ? 'position: absolute; z-index: 1000; margin-top: 8px' : ''
-    },
-    showList: function () {
-      return this.searchText !== ''
-    }
-  },
-  methods: {
-    sourceClicked: function (val) {
-      this.$emit('input', val)
-      this.resetSearch()
-    },
-    resetSearch: function () {
-      this.searchText = ''
-    },
-    refresh: _.debounce(function () {
-      var that = this
-      let str = that.searchText
-      str = str.toUpperCase()
-      str = str.replace(/\s+/g, '')
-      if (this.lastQuery === str) {
-        return
-      }
-      this.lastQuery = str
-      swh.querySkySources(str, 10).then(results => {
-        if (str !== that.lastQuery) {
-          console.log('Cancelled query: ' + str)
-          return
-        }
-        that.autoCompleteChoices = results
-      }, err => { console.log(err) })
-    }, 200),
-    nameForSkySource: function (s) {
-      const cn = swh.cleanupOneSkySourceName(s.match)
-      const n = swh.nameForSkySource(s)
-      if (cn === n) {
-        return n
-      } else {
-        return cn + ' (' + n + ')'
-      }
-    },
-    typeToName: function (t) {
-      return swh.nameForSkySourceType(t)
-    },
-    iconForSkySource: function (s) {
-      return swh.iconForSkySource(s)
-    }
-  },
-  mounted: function () {
-    var that = this
-    const onClick = e => {
-      if (that.searchText !== '') {
-        that.searchText = ''
-      }
-    }
-    const guiParent = document.querySelector('stel') || document.body
-    guiParent.addEventListener('click', onClick, false)
-  },
-  directives: {
-    clickOutside: vClickOutside.directive
+const props = defineProps({
+  value: { type: Object, required: false },
+  floatingList: { type: Boolean, required: false }
+});
+
+const emit = defineEmits(['input']);
+
+const stellariumStore = useStellariumStore();
+const autoCompleteChoices = ref<{ names: string[]; types: string[] }[]>([]);
+const searchText = ref('');
+const lastQuery = ref<string | undefined>(undefined);
+
+const listStyle = computed(() => {
+  return props.floatingList ? 'position: absolute; z-index: 1000; margin-top: 8px' : '';
+});
+
+const showList = computed(() => {
+  return searchText.value !== '';
+});
+
+const sourceClicked = (val: any) => {
+  emit('input', val);
+  resetSearch();
+};
+
+const resetSearch = () => {
+  searchText.value = '';
+};
+
+const refresh = _.debounce(() => {
+  const str = searchText.value.toUpperCase().replace(/\s+/g, '');
+  if (lastQuery.value === str) {
+    return;
   }
-}
+  lastQuery.value = str;
+  querySkySources(str, 10).then(
+    (results: { names: string[]; types: string[] }[]) => {
+      if (str !== lastQuery.value) {
+        console.log('Cancelled query: ' + str);
+        return;
+      }
+      autoCompleteChoices.value = results;
+    },
+    (err: any) => {
+      console.log(err);
+    }
+  );
+}, 200);
+
+const nameForSkySource = (s: any) => {
+  const cn = cleanupOneSkySourceName(stellariumStore.stel, s.match, 0);
+  const n = utilNameForSkySource(stellariumStore.stel, s);
+  return cn === n ? n : `${cn} (${n})`;
+};
+
+const typeToName = (t: any) => {
+  return nameForSkySourceType(stellariumStore.stel, t);
+};
+
+const iconForSkySource = (s: any) => {
+  return utilIconForSkySource(s);
+};
+
+onMounted(() => {
+  const onClick = (_e: Event) => {
+    if (searchText.value !== '') {
+      searchText.value = '';
+    }
+  };
+  const guiParent = document.querySelector('stel') || document.body;
+  guiParent.addEventListener('click', onClick, false);
+});
+
+watch(searchText, (newValue) => {
+  if (newValue === '') {
+    autoCompleteChoices.value = [];
+    lastQuery.value = undefined;
+    return;
+  }
+  refresh();
+});
 </script>
 
 <style>

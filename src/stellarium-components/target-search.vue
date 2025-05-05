@@ -8,30 +8,33 @@
 
 <template>
   <div class="tsearch">
-    <skysource-search v-model="obsSkySource" floatingList="true"></skysource-search>
+    <skysource-search v-model="obsSkySource" :floatingList="true"></skysource-search>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import SkysourceSearch from '@/stellarium-components/skysource-search.vue'
+import { useStellariumStore } from '@/stores';
+import { skySource2SweObj, setSweObjAsSelection } from '@/utils';
 
 const obsSkySource = ref(undefined)
+const stellariumStore = useStellariumStore();
 
-watch(obsSkySource, (ss) => {
+watch(obsSkySource, (ss: any) => {
   if (!ss) {
     return
   }
-  // let obj = swh.skySource2SweObj(ss)
-  // if (!obj) {
-  //   obj = this.$stel.createObj(ss.model, ss)
-  //   this.$selectionLayer.add(obj)
-  // }
-  // if (!obj) {
-  //   console.warning("Can't find object in SWE: " + ss.names[0])
-  //   return
-  // }
-  // swh.setSweObjAsSelection(obj)
+  let obj = skySource2SweObj(stellariumStore.stel, ss)
+  if (!obj) {
+    obj = stellariumStore.stel.createObj(ss.model, ss)
+    stellariumStore.selectionLayer.add(obj)
+  }
+  if (!obj) {
+    console.info("Can't find object in SWE: " + ss.names[0])
+    return
+  }
+  setSweObjAsSelection(stellariumStore.stel, obj)
 })
 </script>
 

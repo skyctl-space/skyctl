@@ -7,8 +7,8 @@
 // repository.
 
 <template>
-<v-dialog scrollable max-width='600' v-model="showDataCreditsDialog">
-  <v-card v-if="showDataCreditsDialog">
+<v-dialog scrollable max-width='600' v-model="stellariumStore.showCreditsDialog">
+  <v-card v-if="stellariumStore.showCreditsDialog">
     <v-card-title><div class="text-h5">Data Credits</div></v-card-title>
     <v-card-text style="height: 600px;">
       <h3>Stars</h3>
@@ -52,22 +52,16 @@
       <p>All other graphics by <a href="https://stellarium-labs.com" target="_blank" rel="noopener">Stellarium Labs</a></p>
     </v-card-text>
     <v-card-actions>
-      <v-spacer></v-spacer><v-btn text class="blue--text darken-1" @click="closeDialog">Close</v-btn>
+      <v-spacer></v-spacer><v-btn text class="blue--text darken-1" @click="stellariumStore.showCreditsDialog = false">Close</v-btn>
     </v-card-actions>
   </v-card>
 </v-dialog>
 </template>
 
-<script setup>
-import { ref } from 'vue';
-import { useStore } from 'vuex';
+<script setup lang="ts">
+import { useStellariumStore } from '@/stores';
 
-const store = useStore();
-const showDataCreditsDialog = ref(store.state.showDataCreditsDialog);
-
-function closeDialog() {
-  store.state.showDataCreditsDialog = false;
-}
+const stellariumStore = useStellariumStore();
 </script>
 
 <style>

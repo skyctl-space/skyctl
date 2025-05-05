@@ -75,6 +75,8 @@ onMounted(async () => {
           stellariumStore.currentLatitude = formatLatitude(0);
           stellariumStore.currentLongitude = formatLongitude(0);
         }
+
+        stellariumStore.selectionLayer = stel.createLayer({ id: 'slayer', z: 50, visible: true })
       }
     });
   }

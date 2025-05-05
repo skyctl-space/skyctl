@@ -7,6 +7,9 @@ interface StellariumStoreState {
     currentLocation: string | null
     currentLongitude: string | null
     currentLatitude: string | null
+    showCreditsDialog: boolean
+    selectedObject: any | null
+    selectionLayer: any | null
 }
 
 export const useStellariumStore = defineStore('stellarium', {
@@ -18,6 +21,9 @@ export const useStellariumStore = defineStore('stellarium', {
         currentLocation: null,
         currentLongitude: null,
         currentLatitude: null,
+        showCreditsDialog: false,
+        selectedObject: null,
+        selectionLayer: null,
     }
   },
 })

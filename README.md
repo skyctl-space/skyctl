@@ -1,16 +1,78 @@
-# Tauri + Vue + TypeScript
+# SkyCTL
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+SkyCTL is a powerful and extensible application designed for astronomy enthusiasts. It integrates with Stellarium Web Engine and provides tools for managing telescopes, observing celestial objects, and analyzing astronomical data. SkyCTL offers a modern and user-friendly interface for both amateur and professional astronomers.
 
-## Recommended IDE Setup
+## Features
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- **Telescope Management**: Control and monitor telescopes with ASIAIR (other platforms will be added).
+- **Stellarium Integration**: View and interact with celestial objects using Stellarium Web Engine.
+- **Image Viewer**: Analyze astronomical images with advanced tools like histograms and overlays.
+- **Observing Tools**: Access observing panels, target search, and selected object information.
+- **Weather Integration**: Check weather conditions for optimal observation.
 
-## Type Support For `.vue` Imports in TS
+## Project Structure
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
+The project is organized as follows:
 
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
+- **`src/`**: Contains the main Vue components, utilities, and assets.
+  - `assets/`: Static assets like images and helper scripts.
+  - `stellarium-components/`: Components specific to Stellarium integration.
+  - `stores.ts`: Pinia store for managing application state.
+  - `main.ts`: Entry point for the Vue application.
+- **`public/`**: Public assets served directly, such as images and fonts.
+- **`scripts/`**: Utility scripts, including `fetch-engine-assets.js` for fetching the latest Stellarium Web Engine files.
+- **`src-tauri/`**: Tauri-specific files for building the desktop application.
 
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+## Installation
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/skyctl-space/skyctl.git
+   cd skyctl
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+4. Start the development server:
+   ```bash
+   pnpm tauri dev
+   ```
+
+## Build
+
+To build the application for production:
+
+```bash
+pnpm build
+```
+
+This will create a production-ready build in the `dist/` directory.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bugfix.
+3. Commit your changes and push the branch.
+4. Open a pull request.
+
+## License
+
+SkyCTL is licensed under the [AGPL License](LICENSE).
+
+## Acknowledgments
+
+- [Stellarium Web Engine](https://github.com/Stellarium/stellarium-web-engine)
+- [Vuetify](https://vuetifyjs.com/)
+- [Pinia](https://pinia.vuejs.org/)
+- [Tauri](https://tauri.app/)
+
+## Contact
+
+For questions or support, please open an issue on the [GitHub repository](https://github.com/skyctl-space/skyctl).

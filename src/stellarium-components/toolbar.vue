@@ -7,19 +7,25 @@
 // repository.
 
 <template>
-    <v-toolbar
-      style="position: absolute; top: 0; left: 0; width: 100%; z-index: 10;"
-      color="transparent" image="/src/assets/images/header.png"
-      elevation="2"
-   >
-      <img class="tbtitle hidden-xs-only" id="stellarium-web-toolbar-logo" src="@/assets/images/logo.svg" width="30" height="30" alt="Stellarium Web Logo"/>
-      <span class="tbtitle hidden-sm-and-down">Stellarium</span>
+  <v-toolbar style="position: absolute; top: 0; left: 0; width: 100%; z-index: 10;" color="transparent"
+    image="/src/assets/images/header.png" elevation="2">
+    <a href="https://stellarium-web.org" target="_blank" rel="noopener">
+
+      <img class="tbtitle hidden-xs-only" id="stellarium-web-toolbar-logo" src="@/assets/images/logo.svg" width="30"
+        height="30" alt="Stellarium Web Logo" />
+    </a>
+    <div class="tbtitle hidden-sm-and-down" style="text-align: center;">
+      <div style="font-size: 8px;text-align:left">Powered by</div>
+      Stellarium<sup>Web</sup>
+    </div>
+    <v-btn icon="mdi-information-outline" @click="stellariumStore.showCreditsDialog = true" </v-btn>
       <v-spacer></v-spacer>
       <target-search></target-search>
       <v-spacer></v-spacer>
-      <div class="subheader grey--text hidden-sm-and-down pr-2" style="user-select: none;">FPS {{ stellariumStore.stel ? stellariumStore.tree.fps.toFixed(1) : '?' }}</div>
+      <div class="subheader grey--text hidden-sm-and-down pr-2" style="user-select: none;">FPS {{ stellariumStore.stel ?
+        stellariumStore.tree.fps.toFixed(1) : '?' }}</div>
       <div class="subheader grey--text hidden-sm-and-down" style="user-select: none;">FOV {{ fov }}</div>
-    </v-toolbar>
+  </v-toolbar>
 </template>
 
 <script setup lang="ts">

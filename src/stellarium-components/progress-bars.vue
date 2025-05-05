@@ -12,20 +12,20 @@
       <transition name="fade">
         <div class="tfader" v-if="bar.value != bar.total">
           <span class="text-caption" style="right: 4px; position: relative;">{{ bar.label }}</span>
-          <v-progress-circular :rotate="-90" size=18 :value="bar.value / bar.total * 100"></v-progress-circular>
+          <v-progress-circular :rotate="-90" size=18 :model-value="bar.value / bar.total * 100"></v-progress-circular>
         </div>
       </transition>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
-import { useStore } from 'vuex';
+import { useStellariumStore } from '@/stores';
 
-const store = useStore();
+const stellariumStore = useStellariumStore();
 
-const progressBars = computed(() => store.state.stel.progressbars);
+const progressBars = computed(() => stellariumStore.tree?.progressbars);
 </script>
 
 <style>
