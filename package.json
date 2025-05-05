@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/fetch-engine-assets.js",
-    "predev": "node scripts/fetch-engine-assets.js",
+    "prebuild": "rsync -a --exclude='.git' dependencies/skydata public/ && node scripts/fetch-engine-assets.js",
+    "predev": "rsync -a --exclude='.git' dependencies/skydata public/ && node scripts/fetch-engine-assets.js",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",

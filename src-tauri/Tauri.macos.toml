@@ -1,0 +1,5 @@
+[bundle.macOS]
+frameworks = ["bins/libcfitsio.dylib"]
+
+[build]
+beforeBundleCommand = "scripts/fix_macos_dylibs.sh"

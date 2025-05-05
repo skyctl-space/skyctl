@@ -1,3 +1,6 @@
 [submodule "public/skydata"]
 	path = public/skydata
 	url = https://github.com/skyctl-space/skydata.git
+[submodule "dependencies/skydata"]
+	path = dependencies/skydata
+	url = http://github.com/skyctl-space/skydata
