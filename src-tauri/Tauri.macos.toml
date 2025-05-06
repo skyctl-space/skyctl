@@ -2,4 +2,4 @@
 frameworks = ["bins/libcfitsio.dylib"]
 
 [build]
-beforeBundleCommand = "scripts/fix_macos_dylibs.sh"
+beforeBundleCommand = "sh scripts/fix_macos_dylibs.sh"
