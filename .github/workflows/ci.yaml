@@ -69,17 +69,13 @@ jobs:
         run: |
           pnpm install
 
+      # Our macOS build uses the cfitsio library from Homebrew, so the .10.dylib would be selected
       - name: Build Tauri App
         run: |
+          sed -i -e 's|libcfitsio.dylib|libcfitsio.10.dylib|g' src-tauri/Tauri.macos.toml
+          mkdir -p src-tauri/bins
+          ln -sf libcfitsio.dylib src-tauri/bins/libcfitsio.10.dylib
           pnpm tauri build --verbose
-
-      - name: Upload macOS dylibs log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fix_macos_dylibs_log
-          path: /tmp/fix_macos_dylibs.log
-          if-no-files-found: ignore
 
       - name: Archive App Artifact
         uses: actions/upload-artifact@v4

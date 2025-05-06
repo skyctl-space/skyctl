@@ -18,7 +18,6 @@ const time = ref(0)
         <v-divider/>
         <v-card-text>
             Welcome to SkyCtl, your all-in-one astronomy control center.
-            <a href="/assets/js/stellarium-web-engine.wasm"> link</a>
         </v-card-text>
         <v-divider/>
         <v-card class="mx-auto" max-width="368">
