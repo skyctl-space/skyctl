@@ -28,4 +28,4 @@ decorations = true
 hiddenTitle = true
 
 [app.security]
-csp = ""
+csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' ipc:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; frame-src 'self' https://www.google.com;"
