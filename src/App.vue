@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import md5 from 'crypto-js/md5'
 import { computed, inject, ref, onMounted, onUnmounted, provide } from 'vue'
 import { settings, saveSettings } from "./settings";
 import { useStellariumStore } from './stores';
@@ -148,18 +147,23 @@ function toggleNightMode() {
   <v-app>
     <v-app-bar image="carina_jwst.jpg" elevation="1" rounded density="compact">
       <v-app-bar-title>
-        <router-link to="/">
-          <p class="font-weight-bold" style="color: white;">SkyCtl</p>
-        </router-link>
+        <v-btn  size="x-large" to="/" variant="plain" class="bright-btn">
+          <template v-slot:prepend>
+            <v-icon size="x-large">
+            <v-img src="/SkyCtl128x128.png" max-width="128" max-height="128" />
+          </v-icon>
+          </template>
+          <span class="font-weight-bold">SkyCtl</span>
+        </v-btn>
+
       </v-app-bar-title>
       <v-spacer></v-spacer>
 
       <v-chip color="red" variant="flat" v-if="settings.sites.length === 0">No Observing Sites configured</v-chip>
-      <v-combobox hide-details 
-        style="color:white; background-color: rgba(128, 0, 0, 0.5); border-radius: 6px; " 
+      <v-combobox hide-details style="color:white; background-color: rgba(128, 0, 0, 0.5); border-radius: 6px; "
         class="my-auto" v-else density="compact" variant="underlined" :items="siteOptions" v-model="selectedSite"
         label="Current Observing site" />
-      <v-spacer/>
+      <v-spacer />
 
       <span style="color: white; margin-right: 16px;">{{ currentTime }}</span>
 
@@ -169,12 +173,13 @@ function toggleNightMode() {
     <v-navigation-drawer expand-on-hover rail>
       <v-list density="compact" nav>
         <v-list-item prepend-icon="mdi-telescope" title="Telescopes" value="telescopes" to="/telescopes">
-          </v-list-item>
+        </v-list-item>
         <v-list-item prepend-icon="mdi-weather-night" title="Stellarium" value="stellarium"
           to="/stellarium"></v-list-item>
-        <v-list-item prepend-icon="mdi-list-status" title="Objectives" value="objectives"
+        <v-list-item disabled prepend-icon="mdi-list-status" title="Objectives" value="objectives"
           to="/objectives"></v-list-item>
-        <v-list-item prepend-icon="mdi-image" title="Image Management" value="images" to="/images"></v-list-item>
+        <v-list-item disabled prepend-icon="mdi-image" title="Image Management" value="images"
+          to="/images"></v-list-item>
         <v-list-item prepend-icon="mdi-weather-night-partly-cloudy" title="Weather Forecast" value="weather"
           to="/weather"></v-list-item>
         <v-list-item prepend-icon="mdi-cog" title="Settings" value="settings" to="/settings"></v-list-item>
@@ -182,7 +187,7 @@ function toggleNightMode() {
     </v-navigation-drawer>
 
     <v-main>
-        <RouterView/>
+      <RouterView />
     </v-main>
   </v-app>
 </template>
@@ -204,5 +209,9 @@ function toggleNightMode() {
   mix-blend-mode: multiply;
   z-index: 10000;
   visibility: hidden;
+}
+
+.bright-btn {
+  opacity: 1;
 }
 </style>
