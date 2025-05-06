@@ -3,6 +3,8 @@
 ![SkyCTL Logo](docs/SkyCtlLogo.png#gh-dark-mode-only)
 ![SkyCTL Logo](docs/SkyCtlLogoLight.png#gh-light-mode-only)
 
+[![Continuous Integration](https://github.com/skyctl-space/skyctl/actions/workflows/ci.yaml/badge.svg)](https://github.com/skyctl-space/skyctl/actions/workflows/ci.yaml)
+
 SkyCTL is an application designed for astrophography enthusiasts that allows to control multiple astophography setups remotely. It's completely open-source and has the following objectives:
 
 - Multiplatform: Windows, Mac and Linux support. Support for mobile devices is possible but not in scope.

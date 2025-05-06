@@ -1,0 +1,228 @@
+name: "Continuous Integration"
+
+on: [pull_request]
+
+# This workflow will build your tauri app without uploading it anywhere.
+
+jobs:
+  mac-build:
+    runs-on: macos-latest # for Arm based macs (M1 and above).
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Homebrew packages
+        uses: tecolicom/actions-use-homebrew-tools@v1
+        with:
+          tools: cfitsio
+          cache: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x # If you change this, make sure to also change the version in the devcontainer Dockerfile.
+          cache: 'pnpm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.86.0
+
+      - name: Install tauri-cli from crates.io
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: tauri-cli
+          version: ^2.0.0
+
+      # Cache pnpm store
+      - name: Load Cached pnpm Store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Cache cargo registry and git
+      - name: Load Cached Cargo Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: |
+          pnpm install
+
+      - name: Build Tauri App
+        run: |
+          pnpm tauri build --verbose
+
+      - name: Upload macOS dylibs log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fix_macos_dylibs_log
+          path: /tmp/fix_macos_dylibs.log
+          if-no-files-found: ignore
+
+      - name: Archive App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyCtl.app
+          path: src-tauri/target/release/bundle/macos/
+          overwrite: true
+          include-hidden-files: true
+
+  linux-build:
+    # We build on arm64 since the developer test machine is Apple Silicon Mac that runs a Linux VM
+    runs-on: ubuntu-22.04-arm
+
+    container:
+      image: ghcr.io/skyctl-space/devcontainer:25.05.0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Cache pnpm store
+      - name: Load Cached pnpm Store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Cache cargo registry and git
+      - name: Load Cached Cargo Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: |
+          pnpm install
+
+      - name: Build Tauri App
+        run: |
+          pnpm tauri build --verbose
+
+      - name: Archive Linux AppImage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyCtl.AppImage
+          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          overwrite: true
+          include-hidden-files: true
+
+  windows-build:
+    runs-on: windows-latest
+    if: false # TODO: migrate to msys2 since the fitsio crate doesn't support mscv
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install pnpm 
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: 'pnpm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.86.0
+
+      - name: Install tauri-cli from crates.io
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: tauri-cli
+          version: ^2.0.0
+
+      # Cache pnpm store
+      - name: Load Cached pnpm Store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Cache cargo registry and git
+      - name: Load Cached Cargo Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install frontend dependencies
+        run: |
+          pnpm install
+
+      - name: Install Dependecies via vcpkg
+        uses: johnwason/vcpkg-action@v6
+        id: vcpkg
+        with:
+          pkgs: cfitsio pkgconf
+          triplet: x64-windows-release
+          token: ${{ github.token }}
+          github-binarycache: true
+
+      - name: Set up pkg-config env vars
+        shell: pwsh
+        run: |
+          echo "PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/x64-windows-release/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "PATH=${{ github.workspace }}/vcpkg/installed/x64-windows-release/tools/pkgconf;$env:PATH" >> $env:GITHUB_ENV
+
+      - name: Build Tauri App
+        run: |
+          pnpm tauri build --verbose
+
+      - name: Archive Windows Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyCtl.msi
+          path: src-tauri/target/release/bundle/msi/
+          overwrite: true
+          include-hidden-files: true
+
