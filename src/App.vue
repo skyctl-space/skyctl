@@ -30,12 +30,6 @@ listen<LocationPayload>('location_update', (event) => {
   geoLocation.error = null;
 });
 
-const username = "Diego Dompe";
-const email = "ddompe@gmail.com";
-const gravatarUrl = computed(() => {
-  return `https://www.gravatar.com/avatar/${md5(email.trim().toLowerCase())}`
-})
-
 const currentTime = ref(new Date().toLocaleString("en-US", {
   hour12: false,
   timeZoneName: "short"
@@ -173,12 +167,6 @@ function toggleNightMode() {
     </v-app-bar>
 
     <v-navigation-drawer expand-on-hover rail>
-      <v-list>
-        <v-list-item :prepend-avatar="gravatarUrl" :subtitle="email" :title="username"></v-list-item>
-      </v-list>
-
-      <v-divider></v-divider>
-
       <v-list density="compact" nav>
         <v-list-item prepend-icon="mdi-telescope" title="Telescopes" value="telescopes" to="/telescopes">
           </v-list-item>
