@@ -23,11 +23,11 @@ name = "skyctl_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2", features = ["config-json5"] }
 pkg-config = "0.3"
 
 [dependencies]
-tauri = { version = "2", features = ["config-toml"] }
+tauri = { version = "2", features = ["config-json5"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
