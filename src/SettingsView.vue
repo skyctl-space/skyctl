@@ -129,6 +129,8 @@ router.beforeEach((_to, from, next) => {
         next();
     }
 });
+
+const iframeLoading = ref(true); // State to track if the iframe has loaded
 </script>
 
 <template>
@@ -243,15 +245,19 @@ router.beforeEach((_to, from, next) => {
         <!-- Modal for Google Maps -->
         <v-dialog v-model="showMapModal" max-width="800px">
             <v-card>
-                <v-card-title>
+                <v-card-title class="d-flex justify-right align-center">
                     Location on Google Maps
                     <v-spacer></v-spacer>
-                    <v-btn icon="mdi-close" @click="showMapModal = false"></v-btn>
+                    <v-btn icon="mdi-close" @click="showMapModal = false; iframeLoading = true"></v-btn>
                 </v-card-title>
                 <v-card-text>
+                    <v-skeleton-loader v-if="iframeLoading" type="image" height="400px"
+                        style="position: absolute; top: 80; left: 0; width: 100%; height: 400px; z-index: 10;">
+                    </v-skeleton-loader>
                     <iframe
                         :src="`https://www.google.com/maps?q=${selectedLocation.latitude},${selectedLocation.longitude}&z=15&output=embed`"
-                        width="100%" height="400" style="border:0;" allowfullscreen=false loading="lazy"></iframe>
+                        width="100%" height="400px" style="border:0;" allowfullscreen=false loading="eager"
+                        @load="iframeLoading = false"></iframe>
                 </v-card-text>
             </v-card>
         </v-dialog>
