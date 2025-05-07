@@ -298,15 +298,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
-name = "autotools"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef941527c41b0fc0dd48511a8154cd5fc7e29200a0ff8b7203c5d777dbc795cf"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "av1-grain"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1065,6 +1056,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3d8a32ae18130a3c84dd492d4215c3d913c3b07c6b63c2eb3eb7ff1101ab7bf"
 
 [[package]]
+name = "enum_dispatch"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "enumflags2"
 version = "0.7.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1192,24 +1195,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "fitsio"
-version = "0.17.0"
+name = "fitsrs"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39a04673e1e4dd97618032a1102693406226ed6522c9a906b309fa680fa99945"
+checksum = "00e9a6c7306dc64637cd9f7f73456dfb01fad1ad6fea0ec3c275a3a18a93d848"
 dependencies = [
- "fitsio-sys",
- "libc",
- "ndarray",
-]
-
-[[package]]
-name = "fitsio-sys"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "180138acfd0c52cb924845d417b31fa27ea2d9f09c863619b5bfa24ab8db7a66"
-dependencies = [
- "autotools",
- "pkg-config",
+ "async-trait",
+ "byteorder",
+ "flate2",
+ "futures",
+ "log",
+ "quick-error",
+ "serde",
+ "serde_json",
+ "wcs",
 ]
 
 [[package]]
@@ -1281,12 +1280,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65bc07b1a8bc7c85c5f2e110c476c7389b4554ba72af57d8445ea63a576b0876"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "futures-executor",
+ "futures-io",
+ "futures-sink",
+ "futures-task",
+ "futures-util",
+]
+
+[[package]]
 name = "futures-channel"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
 dependencies = [
  "futures-core",
+ "futures-sink",
 ]
 
 [[package]]
@@ -1354,6 +1369,7 @@ version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
+ "futures-channel",
  "futures-core",
  "futures-io",
  "futures-macro",
@@ -2369,6 +2385,12 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
+
+[[package]]
+name = "mapproj"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cef28b23f82a86b32a30cfbd8e45fb66645bd677b150636ae277ac9295054c44"
 
 [[package]]
 name = "markup5ever"
@@ -4037,7 +4059,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "embed_plist",
- "fitsio",
+ "fitsrs",
  "image",
  "lazy_static",
  "log",
@@ -5212,6 +5234,19 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "wcs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2f866273d3acda7c63f9beb181fb3729656dab152bd8be4d9d4dfc5f71c258a"
+dependencies = [
+ "enum_dispatch",
+ "mapproj",
+ "paste",
+ "quick-error",
+ "serde",
 ]
 
 [[package]]

@@ -3,6 +3,8 @@ use std::sync::{Arc, RwLock};
 use tauri::{command, AppHandle, Emitter};
 use crate::rawimage::{RawImage, RawRGBImage};
 use once_cell::sync::Lazy;
+use std::fs::File;
+use std::io::BufReader;
 
 // Global hash table for RawImage objects
 type RawImageMap = Arc<RwLock<HashMap<u32, Box<RawImage>>>>;
@@ -19,8 +21,11 @@ pub async fn load_fits_image(
 
     // Load the FITS file and create a new RawImage
     let path = "/Users/dompegam/ws/skyctl/public/Light_NGC3372_300.0s_Bin1_gain100_20230205-040711_0.0C_0030.fit";
-    let fits = fitsio::FitsFile::open(path).map_err(|e| e.to_string())?;
-    let mut raw_image = RawImage::from_fits(fits).map_err(|e| e.to_string())?;
+    let f = File::open(path).unwrap();
+    let reader = BufReader::new(f);
+    
+    let mut raw_image = RawImage::from_reader(reader).map_err(|e| e.to_string())?;
+
 
     raw_image.debayer().map_err(|e| e.to_string())?;
     raw_image.downsample(display_width, display_height).map_err(|e| e.to_string())?;

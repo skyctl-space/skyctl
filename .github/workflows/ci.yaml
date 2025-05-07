@@ -22,12 +22,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Install Homebrew packages
-        uses: tecolicom/actions-use-homebrew-tools@v1
-        with:
-          tools: cfitsio
-          cache: true
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -79,12 +73,8 @@ jobs:
         run: |
           pnpm install
 
-      # Our macOS build uses the cfitsio library from Homebrew, so the .10.dylib would be selected
       - name: Build Tauri App
         run: |
-          sed -i -e 's|libcfitsio.dylib|libcfitsio.10.dylib|g' src-tauri/Tauri.macos.toml
-          mkdir -p src-tauri/bins
-          ln -sf libcfitsio.dylib src-tauri/bins/libcfitsio.10.dylib
           pnpm tauri build --verbose --debug
 
       - name: Archive App Artifact
@@ -164,20 +154,6 @@ jobs:
           run_install: false
 
       # Node 18.x and Rust 1.86 are included on windows-latest: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
-
-      - name: Install dependencies
-        run: |
-          vcpkg install cfitsio:x64-windows pkgconf:x64-windows
-          ls $env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/tools/pkgconf
-          echo "PKG_CONFIG_PATH=$env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
-          echo "PATH=$env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/tools/pkgconf;$env:PATH" >> $env:GITHUB_ENV
-
-      - name: List .pc files
-        run: |
-          echo "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
-          Get-ChildItem "$env:PKG_CONFIG_PATH"
-          pkgconf --list-all
-          cargo build fitsio --verbose
 
       - name: Install tauri-cli from crates.io
         uses: baptiste0928/cargo-install@v3
