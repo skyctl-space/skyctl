@@ -27,8 +27,6 @@ pub fn start_asiair_discovery(app: AppHandle) {
         .set_broadcast(true)
         .expect("Failed to enable broadcast");
 
-    let mut discovery_id = 1; // Start with an initial ID
-
     let app_handle = app.clone();
     let devices_cache = Arc::new(Mutex::new(HashMap::<String, Device>::new())); // Cache for devices
 
@@ -37,13 +35,11 @@ pub fn start_asiair_discovery(app: AppHandle) {
         loop {
             if DISCOVERY_RUNNING.load(Ordering::SeqCst) {
                 let discovery_message = json!({
-                    "id": discovery_id.to_string(),
+                    "id": "132", // ASIAir App uses this value hardcoded
                     "method": "scan_air",
                     "name": "iphone"
                 })
                 .to_string() + "\r\n";
-
-                discovery_id += 1; // Increment the ID for the next message
 
                 let _ = socket.send_to(discovery_message.as_bytes(), "255.255.255.255:4720");
 
@@ -80,6 +76,7 @@ pub fn start_asiair_discovery(app: AppHandle) {
                 app_handle
                     .emit("discovered_device", consolidated_list)
                     .expect("Failed to emit device list");
+                thread::sleep(Duration::from_millis(1000)); // Wait before sending the next discovery message
             } else {
                 break; // Exit the loop when discovery is stopped
             }

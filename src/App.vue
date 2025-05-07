@@ -147,11 +147,11 @@ function toggleNightMode() {
   <v-app>
     <v-app-bar image="carina_jwst.jpg" elevation="1" rounded density="compact">
       <v-app-bar-title>
-        <v-btn  size="x-large" to="/" variant="plain" class="bright-btn">
+        <v-btn size="x-large" to="/" variant="plain" class="bright-btn">
           <template v-slot:prepend>
             <v-icon size="x-large">
-            <v-img src="/SkyCtl128x128.png" max-width="128" max-height="128" />
-          </v-icon>
+              <v-img src="/SkyCtl128x128.png" max-width="128" max-height="128" />
+            </v-icon>
           </template>
           <span class="font-weight-bold">SkyCtl</span>
         </v-btn>
@@ -176,10 +176,21 @@ function toggleNightMode() {
         </v-list-item>
         <v-list-item prepend-icon="mdi-weather-night" title="Stellarium" value="stellarium"
           to="/stellarium"></v-list-item>
-        <v-list-item disabled prepend-icon="mdi-list-status" title="Objectives" value="objectives"
-          to="/objectives"></v-list-item>
-        <v-list-item disabled prepend-icon="mdi-image" title="Image Management" value="images"
-          to="/images"></v-list-item>
+
+         <v-tooltip text="Coming soon!" location="end">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" prepend-icon="mdi-list-status" title="Objectives"
+              value="objectives"></v-list-item>
+          </template>
+        </v-tooltip>
+
+        <v-tooltip text="Coming soon!" location="end">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" prepend-icon="mdi-image" title="Image Management"
+              value="images"></v-list-item>
+          </template>
+        </v-tooltip>
+
         <v-list-item prepend-icon="mdi-weather-night-partly-cloudy" title="Weather Forecast" value="weather"
           to="/weather"></v-list-item>
         <v-list-item prepend-icon="mdi-cog" title="Settings" value="settings" to="/settings"></v-list-item>
