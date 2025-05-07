@@ -4,9 +4,10 @@ use crate::{
     debayer::{debayer_image, BayerPattern},
     downsample::{downsample, downsample_rgb},
 };
-use fitsio::FitsFile;
-use ndarray::{s, Array, Array2, Ix2, Ix3, IxDyn};
+use fitsrs::{Fits, HDU, Pixels, card::Value}; // Updated imports for fitsrs
+use ndarray::{s, Array, Array2, Ix2, Ix3};
 use rayon::join;
+use std::io::BufReader;
 
 #[derive(serde::Serialize)]
 pub struct Stat{
@@ -25,27 +26,28 @@ pub struct RawRGBImage {
     pub stats: Vec<Stat>,
 }
 
+#[derive(Debug)]
 pub struct RawImage {
     pub bayer_pattern: BayerPattern,
-    pub raw_image: Array<u32, Ix2>,
-    pub debayered_image: Option<Array<u32, Ix3>>,
+    pub raw_image: Array<i32, Ix2>,
+    pub debayered_image: Option<Array<i32, Ix3>>,
     pub downsampled: bool,
     pub downsampled_width: usize,
     pub downsampled_height: usize,
 }
 
-fn median(data: &Array2<u32>) -> f32 {
+fn median(data: &Array2<i32>) -> f32 {
     let len = data.len();
     if len == 0 {
         return 0.0;
     }
     let mid = len / 2;
-    let mut v: Vec<u32> = data.iter().copied().collect();
+    let mut v: Vec<i32> = data.iter().copied().collect();
     let (_, median, _) = v.select_nth_unstable(mid);
     *median as f32
 }
 
-fn calc_channel_stats(data: &Array2<u32>) -> Stat {
+fn calc_channel_stats(data: &Array2<i32>) -> Stat {
     let median_val = median(data);
     let len = data.len();
     let n = len as f32;
@@ -75,29 +77,47 @@ fn calc_channel_stats(data: &Array2<u32>) -> Stat {
 }
 
 impl RawImage {
-    pub fn from_fits(mut fits: FitsFile) -> Result<Self, String> {
-        let hdu = fits.primary_hdu().map_err(|e| e.to_string())?;
-        let raw_image_u32: Array<u32, Ix2> = hdu
-            .read_image::<Array<u32, IxDyn>>(&mut fits)
-            .map_err(|e| e.to_string())?
-            .into_dimensionality::<Ix2>()
-            .map_err(|_| "Failed to convert to 2D array".to_string())?;
-        let bayer_pattern = 
-            match hdu.read_key::<String>(&mut fits, "BAYERPAT").unwrap_or_else(|_| "".to_string()).to_uppercase().as_str() {
-            "RGGB" => BayerPattern::RGGB,
-            "BGGR" => BayerPattern::BGGR,
-            "GRBG" => BayerPattern::GRBG,
-            "GBRG" => BayerPattern::GBRG,
-            _ => BayerPattern::NONE,
-        };
-        Ok(Self {
-            raw_image: raw_image_u32,
-            bayer_pattern: bayer_pattern,
-            debayered_image: None,
-            downsampled: false,
-            downsampled_width: 0,
-            downsampled_height: 0,
-        })
+    pub fn from_reader(reader: BufReader<std::fs::File>) -> Result<Self, String> {
+        let mut hdu_list = Fits::from_reader(reader);
+
+        if let Some(Ok(HDU::Primary(hdu))) = hdu_list.next() {
+            let xtension = hdu.get_header().get_xtension();
+            let naxis1 = *xtension.get_naxisn(1).unwrap() as usize;
+            let naxis2 = *xtension.get_naxisn(2).unwrap() as usize;
+
+            let image = hdu_list.get_data(&hdu);
+
+            if let Pixels::I16(data) = image.pixels() {
+                let raw_image_i16 = Array::from_shape_vec((naxis2, naxis1), data.collect::<Vec<_>>())
+                    .map_err(|_| "Failed to convert to 2D array".to_string())?;
+                // The data from ASIAIR is unsigned, so opening it as signed causes the sign bit to shift it
+                let raw_image_i32 = raw_image_i16.mapv(|x| x as i32 + (u16::MAX / 2) as i32);
+
+                let bayer_pattern = match hdu.get_header().get("BAYERPAT") {
+                    Some(Value::String{ value, .. }) => match value.as_str() {
+                        "RGGB" => BayerPattern::RGGB,
+                        "BGGR" => BayerPattern::BGGR,
+                        "GRBG" => BayerPattern::GRBG,
+                        "GBRG" => BayerPattern::GBRG,
+                        _ => BayerPattern::NONE,
+                    },
+                    _ => BayerPattern::NONE,
+                };
+
+                return Ok(Self {
+                    raw_image: raw_image_i32,
+                    bayer_pattern,
+                    debayered_image: None,
+                    downsampled: false,
+                    downsampled_width: 0,
+                    downsampled_height: 0,
+                });
+            } else {
+                return Err("Expected I16 pixel data".to_string());
+            }
+        }
+
+        Err("No primary HDU found".to_string())
     }
 
     pub fn debayer(&mut self) -> Result<(), String> {
@@ -153,7 +173,7 @@ impl RawImage {
             let stats = self.calculate_stats();
 
             for &v in self.raw_image.iter() {
-                let v16 = v.min(u16::MAX as u32) as u16;
+                let v16 = v.min(u16::MAX as i32) as u16;
                 rgb.extend_from_slice(&[v16, v16, v16]);
             }
     
@@ -171,9 +191,9 @@ impl RawImage {
 
                 for pixel in debayered_image.outer_iter() {
                     for rgb_triplet in pixel.outer_iter() {
-                        let r = rgb_triplet[0].min(u16::MAX as u32) as u16;
-                        let g = rgb_triplet[1].min(u16::MAX as u32) as u16;
-                        let b = rgb_triplet[2].min(u16::MAX as u32) as u16;
+                        let r = rgb_triplet[0].min(u16::MAX as i32) as u16;
+                        let g = rgb_triplet[1].min(u16::MAX as i32) as u16;
+                        let b = rgb_triplet[2].min(u16::MAX as i32) as u16;
                         rgb.extend_from_slice(&[r, g, b]);
                     }
                 }
@@ -190,7 +210,7 @@ impl RawImage {
                 let stats = self.calculate_stats();
     
                 for &v in self.raw_image.iter() {
-                    let v16 = v.min(u16::MAX as u32) as u16;
+                    let v16 = v.min(u16::MAX as i32) as u16;
                     rgb.extend_from_slice(&[v16, v16, v16]);
                 }
         

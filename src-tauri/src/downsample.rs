@@ -1,7 +1,7 @@
 use ndarray::{Array2, Array3};
 use rayon::prelude::*;
 
-pub fn downsample(data: &Array2<u32>, max_width: usize, max_height: usize) -> Array2<u32> {
+pub fn downsample(data: &Array2<i32>, max_width: usize, max_height: usize) -> Array2<i32> {
     let (h, w) = data.dim();
     let aspect = w as f32 / h as f32;
     let (target_width, target_height) = if (max_width as f32 / max_height as f32) > aspect {
@@ -15,7 +15,7 @@ pub fn downsample(data: &Array2<u32>, max_width: usize, max_height: usize) -> Ar
     };
     let scale_x = w as f32 / target_width as f32;
     let scale_y = h as f32 / target_height as f32;
-    let pixels: Vec<u32> = (0..target_height)
+    let pixels: Vec<i32> = (0..target_height)
         .into_par_iter()
         .flat_map_iter(|y| {
             (0..target_width).map(move |x| {
@@ -23,15 +23,15 @@ pub fn downsample(data: &Array2<u32>, max_width: usize, max_height: usize) -> Ar
                 let start_y = (y as f32 * scale_y).floor() as usize;
                 let end_x = ((x as f32 + 1.0) * scale_x).ceil() as usize;
                 let end_y = ((y as f32 + 1.0) * scale_y).ceil() as usize;
-                let mut sum = 0u64;
-                let mut count = 0u64;
+                let mut sum = 0i64;
+                let mut count = 0i64;
                 for yy in start_y..end_y.min(h) {
                     for xx in start_x..end_x.min(w) {
-                        sum += data[[yy, xx]] as u64;
+                        sum += data[[yy, xx]] as i64;
                         count += 1;
                     }
                 }
-                if count > 0 { (sum / count) as u32 } else { 0 }
+                if count > 0 { (sum / count) as i32 } else { 0 }
             })
         })
         .collect();
@@ -39,7 +39,7 @@ pub fn downsample(data: &Array2<u32>, max_width: usize, max_height: usize) -> Ar
         .expect("Failed to reshape downsampled array")
 }
 
-pub fn downsample_rgb(data: &Array3<u32>, max_width: usize, max_height: usize) -> Array3<u32> {
+pub fn downsample_rgb(data: &Array3<i32>, max_width: usize, max_height: usize) -> Array3<i32> {
     let (h, w, _) = data.dim();
     let aspect = w as f32 / h as f32;
     let (target_width, target_height) = if (max_width as f32 / max_height as f32) > aspect {
@@ -53,7 +53,7 @@ pub fn downsample_rgb(data: &Array3<u32>, max_width: usize, max_height: usize) -
     };
     let scale_x = w as f32 / target_width as f32;
     let scale_y = h as f32 / target_height as f32;
-    let pixels: Vec<u32> = (0..target_height)
+    let pixels: Vec<i32> = (0..target_height)
         .into_par_iter()
         .flat_map_iter(|y| {
             (0..target_width).flat_map(move |x| {
@@ -62,15 +62,15 @@ pub fn downsample_rgb(data: &Array3<u32>, max_width: usize, max_height: usize) -
                     let start_y = (y as f32 * scale_y).floor() as usize;
                     let end_x = ((x as f32 + 1.0) * scale_x).ceil() as usize;
                     let end_y = ((y as f32 + 1.0) * scale_y).ceil() as usize;
-                    let mut sum = 0u64;
-                    let mut count = 0u64;
+                    let mut sum = 0i64;
+                    let mut count = 0i64;
                     for yy in start_y..end_y.min(h) {
                         for xx in start_x..end_x.min(w) {
-                            sum += data[[yy, xx, c]] as u64;
+                            sum += data[[yy, xx, c]] as i64;
                             count += 1;
                         }
                     }
-                    if count > 0 { (sum / count) as u32 } else { 0 }
+                    if count > 0 { (sum / count) as i32 } else { 0 }
                 })
             })
         })

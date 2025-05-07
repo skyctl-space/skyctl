@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev libcairo-dev libatk1.0-dev libsoup-3.0-dev librsvg2-dev \
     libjavascriptcoregtk-4.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev \
     libgl1-mesa-glx libglu1-mesa \
-    webkit2gtk-driver libcfitsio-dev \
+    webkit2gtk-driver \
     libfuse2 xz-utils zsync desktop-file-utils glib2.0-bin file \
     && rm -rf /var/lib/apt/lists/*
 

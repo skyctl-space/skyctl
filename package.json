@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "prebuild": "rsync -a --exclude='.git' dependencies/skydata public/ && node scripts/fetch-engine-assets.js",
-    "predev": "rsync -a --exclude='.git' dependencies/skydata public/ && node scripts/fetch-engine-assets.js",
+    "prebuild": "node scripts/copy-assets.cjs && node scripts/fetch-engine-assets.js",
+    "predev": "node scripts/copy-assets.cjs && node scripts/fetch-engine-assets.js",
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-store": "^2.2.0",
     "@vueuse/core": "^13.1.0",
     "crypto-js": "^4.2.0",
+    "fs-extra": "^11.3.0",
     "json-rpc-2.0": "^1.7.0",
     "lodash": "^4.17.21",
     "luxon": "^3.6.1",
