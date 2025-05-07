@@ -90,8 +90,21 @@ impl RawImage {
             if let Pixels::I16(data) = image.pixels() {
                 let raw_image_i16 = Array::from_shape_vec((naxis2, naxis1), data.collect::<Vec<_>>())
                     .map_err(|_| "Failed to convert to 2D array".to_string())?;
-                // The data from ASIAIR is unsigned, so opening it as signed causes the sign bit to shift it
-                let raw_image_i32 = raw_image_i16.mapv(|x| x as i32 + (u16::MAX / 2) as i32);
+
+                let raw_image_i32;
+
+                if let Some(Value::Integer{ value, ..}) = hdu.get_header().get("BZERO") {
+                    let bzero = value;
+                    let mut bscale = 1i64;
+
+                    if let Some(Value::Integer{ value, ..}) = hdu.get_header().get("BSCALE") {
+                        bscale = *value;
+                    }
+
+                    raw_image_i32 = raw_image_i16.mapv(|x| ((x as i64 + bzero) * bscale) as i32);
+                } else {
+                    raw_image_i32 = raw_image_i16.mapv(|x| x as i32);
+                }
 
                 let bayer_pattern = match hdu.get_header().get("BAYERPAT") {
                     Some(Value::String{ value, .. }) => match value.as_str() {
