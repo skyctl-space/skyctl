@@ -4,7 +4,7 @@ identifier = "space.skyctl.app"
 
 [bundle]
 active = true
-targets = ["appimage", "msi", "app"]
+targets = ["appimage", "nsis", "app"]
 icon = [
   "icons/32x32.png",
   "icons/128x128.png",

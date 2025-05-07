@@ -150,7 +150,6 @@ jobs:
 
   windows-build:
     runs-on: windows-latest
-    if: false # TODO: migrate to msys2 since the fitsio crate doesn't support mscv
 
     steps:
       - name: Checkout code
@@ -164,16 +163,21 @@ jobs:
           version: 10
           run_install: false
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18.x
-          cache: 'pnpm'
+      # Node 18.x and Rust 1.86 are included on windows-latest: https://github.com/actions/runner-images/blob/main/images/windows/Windows2022-Readme.md
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.86.0
+      - name: Install dependencies
+        run: |
+          vcpkg install cfitsio:x64-windows pkgconf:x64-windows
+          ls $env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/tools/pkgconf
+          echo "PKG_CONFIG_PATH=$env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "PATH=$env:VCPKG_INSTALLATION_ROOT/vcpkg/installed/x64-windows/tools/pkgconf;$env:PATH" >> $env:GITHUB_ENV
+
+      - name: List .pc files
+        run: |
+          echo "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
+          Get-ChildItem "$env:PKG_CONFIG_PATH"
+          pkgconf --list-all
+          cargo build fitsio --verbose
 
       - name: Install tauri-cli from crates.io
         uses: baptiste0928/cargo-install@v3
@@ -209,21 +213,6 @@ jobs:
         run: |
           pnpm install
 
-      - name: Install Dependecies via vcpkg
-        uses: johnwason/vcpkg-action@v6
-        id: vcpkg
-        with:
-          pkgs: cfitsio pkgconf
-          triplet: x64-windows-release
-          token: ${{ github.token }}
-          github-binarycache: true
-
-      - name: Set up pkg-config env vars
-        shell: pwsh
-        run: |
-          echo "PKG_CONFIG_PATH=${{ github.workspace }}/vcpkg/installed/x64-windows-release/lib/pkgconfig" >> $env:GITHUB_ENV
-          echo "PATH=${{ github.workspace }}/vcpkg/installed/x64-windows-release/tools/pkgconf;$env:PATH" >> $env:GITHUB_ENV
-
       - name: Build Tauri App
         run: |
           pnpm tauri build --verbose --debug
@@ -231,8 +220,8 @@ jobs:
       - name: Archive Windows Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SkyCtl.msi
-          path: src-tauri/target/debug/bundle/msi/
+          name: SkyCtl-Installer.exe
+          path: src-tauri/target/debug/bundle/nsis/*.exe
           overwrite: true
           include-hidden-files: true
 
