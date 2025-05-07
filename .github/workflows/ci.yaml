@@ -69,6 +69,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
+            !src-tauri/target/debug/Frameworks/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -83,13 +84,13 @@ jobs:
           sed -i -e 's|libcfitsio.dylib|libcfitsio.10.dylib|g' src-tauri/Tauri.macos.toml
           mkdir -p src-tauri/bins
           ln -sf libcfitsio.dylib src-tauri/bins/libcfitsio.10.dylib
-          pnpm tauri build --verbose
+          pnpm tauri build --verbose --debug
 
       - name: Archive App Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SkyCtl.app
-          path: src-tauri/target/release/bundle/macos/
+          path: src-tauri/target/debug/bundle/macos/
           overwrite: true
           include-hidden-files: true
 
@@ -134,13 +135,13 @@ jobs:
 
       - name: Build Tauri App
         run: |
-          pnpm tauri build --verbose
+          pnpm tauri build --verbose --debug
 
       - name: Archive Linux AppImage Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SkyCtl.AppImage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          path: src-tauri/target/debug/bundle/appimage/*.AppImage
           overwrite: true
           include-hidden-files: true
 
@@ -220,13 +221,13 @@ jobs:
 
       - name: Build Tauri App
         run: |
-          pnpm tauri build --verbose
+          pnpm tauri build --verbose --debug
 
       - name: Archive Windows Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SkyCtl.msi
-          path: src-tauri/target/release/bundle/msi/
+          path: src-tauri/target/debug/bundle/msi/
           overwrite: true
           include-hidden-files: true
 

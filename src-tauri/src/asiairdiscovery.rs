@@ -27,12 +27,7 @@ pub fn start_asiair_discovery(app: AppHandle) {
         .set_broadcast(true)
         .expect("Failed to enable broadcast");
 
-    let discovery_message = json!({
-        "id": "132",
-        "method": "scan_air",
-        "name": "iphone"
-    })
-    .to_string() + "\r\n";
+    let mut discovery_id = 1; // Start with an initial ID
 
     let app_handle = app.clone();
     let devices_cache = Arc::new(Mutex::new(HashMap::<String, Device>::new())); // Cache for devices
@@ -41,6 +36,15 @@ pub fn start_asiair_discovery(app: AppHandle) {
     let _ = thread::Builder::new().name("asiair_discovery".to_string()).spawn(move || {
         loop {
             if DISCOVERY_RUNNING.load(Ordering::SeqCst) {
+                let discovery_message = json!({
+                    "id": discovery_id.to_string(),
+                    "method": "scan_air",
+                    "name": "iphone"
+                })
+                .to_string() + "\r\n";
+
+                discovery_id += 1; // Increment the ID for the next message
+
                 let _ = socket.send_to(discovery_message.as_bytes(), "255.255.255.255:4720");
 
                 let mut buf = [0u8; 4096];
