@@ -64,7 +64,6 @@ jobs:
             ~/.cargo/git
             src-tauri/target/debug/build
             src-tauri/target/debug/deps
-            src-tauri/target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -117,7 +116,6 @@ jobs:
             ~/.cargo/git
             src-tauri/target/debug/build
             src-tauri/target/debug/deps
-            src-tauri/target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -180,7 +178,6 @@ jobs:
             ~/.cargo/git
             src-tauri/target/debug/build
             src-tauri/target/debug/deps
-            src-tauri/target/debug/incremental
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
