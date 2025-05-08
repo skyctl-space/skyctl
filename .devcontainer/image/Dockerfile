@@ -2,16 +2,16 @@ FROM ubuntu:22.04
 
 # Install Ubuntu developer dependencies: we need
 # - GTK and WebKit for Linux Tauri support
-# - libcfitsio for FITS image support
 
 RUN apt-get update && apt-get install -y \
-    curl locales \
+    curl locales ca-certificates  \
     build-essential scons git sudo pkg-config xdg-utils squashfs-tools patchelf \
     libssl-dev libcairo-dev libatk1.0-dev libsoup-3.0-dev librsvg2-dev \
     libjavascriptcoregtk-4.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev \
-    libgl1-mesa-glx libglu1-mesa \
+    libgl1-mesa-glx libglu1-mesa libcanberra-gtk-module libcanberra-gtk3-module \
     webkit2gtk-driver \
     libfuse2 xz-utils zsync desktop-file-utils glib2.0-bin file \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the locale
