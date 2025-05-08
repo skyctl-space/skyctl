@@ -1,0 +1,44 @@
+{
+    "productName": "SkyCtl",
+    "version": "0.1.0",
+    "identifier": "space.skyctl.app",
+
+    "build": {
+        "beforeDevCommand": "pnpm dev",
+        "devUrl": "http://localhost:1420",
+        "beforeBuildCommand": "pnpm build",
+        "frontendDist": "../dist"
+    },
+    "app": {
+        "windows": [
+            {
+            "title": "SkyCtl",
+            "width": 1280,
+            "height": 720,
+            "center": true,
+            "decorations": true,
+            "hiddenTitle": true
+            }
+        ],
+        "security": {
+            "csp": "\
+                default-src 'self' ;\
+                script-src 'self' 'wasm-unsafe-eval' ;\
+                connect-src 'self' ipc: http://ipc.localhost https://api.open-meteo.com ;\
+                img-src 'self' data: https: ;\
+                style-src 'self' 'unsafe-inline' ;\
+                frame-src 'self' https://www.google.com"
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": ["appimage", "nsis", "app"],
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ]
+    }
+}
