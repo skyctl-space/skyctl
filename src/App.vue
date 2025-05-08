@@ -211,15 +211,16 @@ function toggleNightMode() {
 }
 
 #nightmode {
-  background: #ff2200;
+  background: transparent;
   pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
   height: 100%;
   width: 100%;
-  position: absolute;
-  z-index: 1000;
-  mix-blend-mode: multiply;
   z-index: 10000;
   visibility: hidden;
+  backdrop-filter: brightness(0.4) contrast(1.0) sepia(1) hue-rotate(-45deg) saturate(5);
 }
 
 .bright-btn {
