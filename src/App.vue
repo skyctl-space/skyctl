@@ -119,6 +119,22 @@ onMounted(() => {
     geoLocation.error = "Geolocation is not supported.";
   }
 
+  // Fallback if we don't have access to location APIs
+  if (!geoLocation.valid) {
+    fetch('https://ipinfo.io/json')
+    .then(response => response.json())
+    .then(data => {
+      const [latitude, longitude] = data.loc.split(',');
+      geoLocation.latitude = parseFloat(latitude);
+      geoLocation.longitude = parseFloat(longitude);
+      geoLocation.valid = true;
+      geoLocation.error = null;
+    })
+    .catch(error => {
+      console.error('Error fetching IP geolocation:', error);
+    });
+  }
+
   onUnmounted(() => {
     clearInterval(interval);
   });

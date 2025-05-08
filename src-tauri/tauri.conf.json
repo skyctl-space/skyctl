@@ -22,7 +22,7 @@
             }
         ],
         "security": {
-            "csp": "default-src 'self' ; script-src 'self' 'wasm-unsafe-eval' ; connect-src 'self' ipc: http://ipc.localhost https://api.open-meteo.com ; img-src 'self' data: https: ; style-src 'self' 'unsafe-inline' ; frame-src 'self' https://www.google.com"
+            "csp": "default-src 'self' ; script-src 'self' 'wasm-unsafe-eval' ; connect-src 'self' ipc: http://ipc.localhost https://api.open-meteo.com https://ipinfo.io https://tile.openstreetmap.org ; img-src 'self' data: https: ; style-src 'self' 'unsafe-inline' ; frame-src 'self' https://www.openstreetmap.org"
         }
     },
     "bundle": {
