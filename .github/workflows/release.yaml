@@ -5,10 +5,6 @@ on:
     types:
       - published
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   mac-build:
     runs-on: ${{ matrix.os }}
@@ -72,9 +68,14 @@ jobs:
         run: |
           pnpm install
 
+      - name: Update version in tauri.conf.json to match release name
+        shell: bash
+        run: |
+          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          mv tmp.json src-tauri/tauri.conf.json
+
       - name: Build Tauri App
         run: |
-          sed -i -e 's/"version": "\(.*\)"/"version": "${{ github.ref_name }}"/' src-tauri/tauri.conf.json
           pnpm tauri build --verbose
 
       - name: Publish to Release
@@ -127,9 +128,15 @@ jobs:
         run: |
           pnpm install
 
+      - name: Update version in tauri.conf.json to match release name
+        shell: bash
+        run: |
+          sudo apt update && sudo apt install -y jq
+          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          mv tmp.json src-tauri/tauri.conf.json
+
       - name: Build Tauri App
         run: |
-          sed -i -e 's/"version": "\(.*\)"/"version": "${{ github.ref_name }}"/' src-tauri/tauri.conf.json
           pnpm tauri build --verbose
 
       - name: Publish to Release
@@ -198,12 +205,14 @@ jobs:
         run: |
           pnpm install
 
-      - name: Build Tauri App
-        shell: pwsh
+      - name: Update version in tauri.conf.json to match release name
+        shell: bash
         run: |
-          $file = 'src-tauri/tauri.conf.json'
-          $ref = '${{ github.ref_name }}'
-          (Get-Content $file -Raw) -replace '"version":\s*"(.*?)"', '"version": "' + $ref + '"' | Set-Content $file
+          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          mv tmp.json src-tauri/tauri.conf.json
+
+      - name: Build Tauri App
+        run: |
           pnpm tauri build --verbose
 
       - name: Publish to Release
