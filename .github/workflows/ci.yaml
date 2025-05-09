@@ -34,10 +34,7 @@ jobs:
           node-version: 18.x # If you change this, make sure to also change the version in the devcontainer Dockerfile.
           cache: 'pnpm'
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.86.0
+      # Mac runners came with Rust 1.86.0
 
       - name: Install tauri-cli from crates.io
         uses: baptiste0928/cargo-install@v3

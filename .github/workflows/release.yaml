@@ -37,10 +37,7 @@ jobs:
           node-version: 18.x
           cache: 'pnpm'
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.86.0
+      # Mac runners came with Rust 1.86.0
 
       - name: Install tauri-cli from crates.io
         uses: baptiste0928/cargo-install@v3
@@ -143,6 +140,7 @@ jobs:
 
       - name: Upload to Release (gh)
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           gh release upload "${{ github.ref_name }}" \
             "src-tauri/target/release/bundle/appimage/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" \
             --clobber
@@ -219,8 +217,6 @@ jobs:
 
       - name: Upload to Release (gh)
         run: |
-          gh release upload "${{ github.ref_name }}" \
-            "src-tauri/target/release/bundle/nsis/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}-setup.exe" \
-            --clobber
+          gh release upload "${{ github.ref_name }}" "src-tauri/target/release/bundle/nsis/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}-setup.exe" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
