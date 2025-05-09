@@ -71,7 +71,7 @@ jobs:
       - name: Update version in tauri.conf.json to match release name
         shell: bash
         run: |
-          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          jq --arg ver "${{ github.ref_name }}" '.version = $ver' src-tauri/tauri.conf.json > tmp.json
           mv tmp.json src-tauri/tauri.conf.json
 
       - name: Build Tauri App
@@ -132,7 +132,7 @@ jobs:
         shell: bash
         run: |
           sudo apt update && sudo apt install -y jq
-          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          jq --arg ver "${{ github.ref_name }}" '.version = $ver' src-tauri/tauri.conf.json > tmp.json
           mv tmp.json src-tauri/tauri.conf.json
 
       - name: Build Tauri App
@@ -208,7 +208,7 @@ jobs:
       - name: Update version in tauri.conf.json to match release name
         shell: bash
         run: |
-          jq --arg ver "${{ github.ref_name }}" '.package.version = $ver' src-tauri/tauri.conf.json > tmp.json
+          jq --arg ver "${{ github.ref_name }}" '.version = $ver' src-tauri/tauri.conf.json > tmp.json
           mv tmp.json src-tauri/tauri.conf.json
 
       - name: Build Tauri App
