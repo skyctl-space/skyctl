@@ -60,7 +60,7 @@ function initLeafletMap() {
     if (mapRef.value) {
         mapInstance.value = L.map(mapRef.value, {
             center: [mapCenter.value.latitude, mapCenter.value.longitude],
-            zoom: 13,
+            zoom: 15,
 
         }) as L.Map;
 
