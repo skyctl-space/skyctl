@@ -163,13 +163,6 @@ jobs:
           version: 10
           run_install: false
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        if: ${{ matrix.arch == 'aarch64' }} # Runners for arm64 doesn't include node by default
-        with:
-          node-version: 18.x
-          cache: 'pnpm'
-
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         if: ${{ matrix.arch == 'aarch64' }} # Runners for arm64 doesn't include rust by default
