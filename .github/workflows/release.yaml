@@ -161,6 +161,19 @@ jobs:
           version: 10
           run_install: false
 
+      - name: Setup node
+        uses: actions/setup-node@v4
+        if: ${{ matrix.arch == 'arm64' }} # Runners for arm64 doesn't include node by default
+        with:
+          node-version: 18.x
+          cache: 'pnpm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        if: ${{ matrix.arch == 'arm64' }} # Runners for arm64 doesn't include rust by default
+        with:
+          toolchain: 1.86.0
+
       - name: Install tauri-cli from crates.io
         uses: baptiste0928/cargo-install@v3
         with:
