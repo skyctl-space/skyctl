@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SkyCtl.dmg
-          path: src-tauri/target/debug/bundle/macos/
+          path: src-tauri/target/debug/bundle/dmg/
           overwrite: true
           include-hidden-files: true
 
