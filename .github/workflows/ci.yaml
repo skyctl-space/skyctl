@@ -79,7 +79,7 @@ jobs:
       - name: Archive App Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SkyCtl.dmg
+          name: SkyCtl-macos-arm64-image
           path: src-tauri/target/debug/bundle/dmg/*.dmg
           overwrite: true
           include-hidden-files: true
@@ -131,7 +131,7 @@ jobs:
       - name: Archive Linux AppImage Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SkyCtl.AppImage
+          name: SkyCtl-linux-arm64-appimage
           path: src-tauri/target/debug/bundle/appimage/*.AppImage
           overwrite: true
           include-hidden-files: true
@@ -193,7 +193,7 @@ jobs:
       - name: Archive Windows Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SkyCtl-Installer.exe
+          name: SkyCtl-windows-amd64-installer
           path: src-tauri/target/debug/bundle/nsis/*.exe
           overwrite: true
           include-hidden-files: true
