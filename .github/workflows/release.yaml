@@ -78,13 +78,13 @@ jobs:
         run: |
           pnpm tauri build --verbose
 
-      - name: Publish to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: src-tauri/target/release/bundle/dmg/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}.dmg
-          asset_name: SkyCtl-${{ github.ref_name }}-${{ matrix.arch }}.dmg
-          asset_content_type: application/x-apple-diskimage
+      - name: Upload to Release (gh)
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "src-tauri/target/release/bundle/dmg/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}.dmg" \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   linux-build:
     runs-on: ${{ matrix.os }}
@@ -139,13 +139,13 @@ jobs:
         run: |
           pnpm tauri build --verbose
 
-      - name: Publish to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: src-tauri/target/release/bundle/appimage/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}.AppImage
-          asset_name: SkyCtl-${{ github.ref_name }}-${{ matrix.arch }}.AppImage
-          asset_content_type: application/vnd.appimage
+      - name: Upload to Release (gh)
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "src-tauri/target/release/bundle/appimage/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   windows-build:
     runs-on: ${{ matrix.os }}
@@ -154,9 +154,9 @@ jobs:
         include:
           - os: windows-latest
             arch: x64
-          - os: windows-11-arm
-            arch: aarch64        
-
+          # Some node dependencies are not available for arm64 as of May 2025
+          # - os: windows-11-arm
+          #   arch: aarch64
 
     steps:
       - name: Checkout code
@@ -215,11 +215,10 @@ jobs:
         run: |
           pnpm tauri build --verbose
 
-      - name: Publish to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: src-tauri/target/release/bundle/nsis/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}-setup.exe
-          asset_name: SkyCtl-${{ github.ref_name }}-${{ matrix.arch }}-setup.exe
-          asset_content_type: application/x-msdownload
-
+      - name: Upload to Release (gh)
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "src-tauri/target/release/bundle/nsis/SkyCtl_${{ github.ref_name }}_${{ matrix.arch }}-setup.exe" \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

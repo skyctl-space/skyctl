@@ -8,7 +8,7 @@
 SkyCTL is an application designed for astrophography enthusiasts that allows to control multiple astophography setups remotely. It's completely open-source and has the following objectives:
 
 
-- Multiplatform: Windows, Mac and Linux support. All platform supports native amd64/x86_64 and arm64/aarch64 builds. Support for mobile devices is possible but not in scope.
+- Multiplatform: Windows, Mac and Linux support. For Mac and Linux supports native amd64/x86_64 and arm64/aarch64 builds, on Windows the x64 build is performant under emulation of Windows 11 for ARM. Support for mobile devices is possible but not in scope, since the UI isn't optimized for touch (PR's are welcome).
 - Multi-target: capable of controlling remote setups over different protocols: Indi, ALPACA, ASIAIR, Seestar, etc. An objective is to easily allow integrations by new platforms.
 - Desktop Integration: Enable pipeline of image data directly over with other post-processing tools like Siril and PixInsight.
 - Quality: unlike most open source projects around astronomy we want to deliver the code with quality and minimizing regressions, so we implement a from the beggining automated test suites.
