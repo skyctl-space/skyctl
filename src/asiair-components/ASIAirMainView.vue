@@ -1,3 +1,60 @@
+<template>
+    <v-container fluid class="fill-height pa-0 border-0 d-flex flex-column" style="position:relative;">
+
+        <v-window v-model="activePanel" direction="vertical" class="fill-height pa-0 border-0 window-container">
+            <v-window-item v-for="(panel, index) in panels" class="fill-height pa-0 border-0">
+                <div class="window-item-container fill-height d-flex flex-column position-relative overflow-hidden">
+                    <!-- Watermark inside each item -->
+                    <div class="watermark-text">{{ panel.title }}</div>
+
+                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 0"/>
+                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 1"/>
+                </div>
+            </v-window-item>
+
+            <v-dialog :attach=true contained v-model="disconnected" width="100%" persistent>
+                <v-card prepend-icon="mdi-connection" title="Disconnected">
+                    <template v-slot:default>
+                        <v-card-text>
+                            <p v-if="connecting">Trying to connect to the ASIAir at {{
+                                telescopes?.[telescopeIndex]?.config?.host }}...</p>
+                            <p v-else>You are not connected to the ASIAir at {{
+                                telescopes?.[telescopeIndex]?.config?.host
+                                }}</p>
+                        </v-card-text>
+                    </template>
+                    <template v-slot:actions>
+                        <v-progress-linear :active="connecting" height="4" indeterminate></v-progress-linear>
+                        <v-spacer></v-spacer>
+                        <v-btn v-if="connecting" icon="mdi-cancel" @click="abort_connect()">
+                        </v-btn>
+                        <v-btn @click="connect()" :disabled="connecting">
+                            Connect
+                        </v-btn>
+                    </template>
+                </v-card>
+            </v-dialog>
+        </v-window>
+
+        <!-- Absolute Status Bar -->
+        <v-sheet class="status-bar" elevation="6">
+            <!-- <v-menu v-model="menu" :close-on-content-click="false" location="end">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props">
+                        ASI 2600MC Bin1 (1.0 °C)
+                    </v-btn>
+                </template>
+            </v-menu> -->
+            <v-spacer/>
+            <v-spacer/>
+            <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
+        </v-sheet>
+
+        <LeftPanel v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair" :autoHide="false"/>
+        <RigthPanel v-model:active-panel="activePanel"/>
+    </v-container>
+</template>
+
 <script setup lang="ts">
 import { inject, ref, Ref, watch } from 'vue'
 import { TelescopeConnection } from '../types'
@@ -63,62 +120,7 @@ const showCrosshair = ref(false)
 
 </script>
 
-<template>
-    <v-container fluid class="fill-height pa-0 border-0 d-flex flex-column" style="position:relative;">
 
-        <v-window v-model="activePanel" direction="vertical" class="fill-height pa-0 border-0 window-container">
-            <v-window-item v-for="(panel, index) in panels" class="fill-height pa-0 border-0">
-                <div class="window-item-container fill-height d-flex flex-column position-relative overflow-hidden">
-                    <!-- Watermark inside each item -->
-                    <div class="watermark-text">{{ panel.title }}</div>
-
-                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 0"/>
-                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 1"/>
-                </div>
-            </v-window-item>
-
-            <v-dialog :attach=true contained v-model="disconnected" width="100%" persistent>
-                <v-card prepend-icon="mdi-connection" title="Disconnected">
-                    <template v-slot:default>
-                        <v-card-text>
-                            <p v-if="connecting">Trying to connect to the ASIAir at {{
-                                telescopes?.[telescopeIndex]?.config?.host }}...</p>
-                            <p v-else>You are not connected to the ASIAir at {{
-                                telescopes?.[telescopeIndex]?.config?.host
-                                }}</p>
-                        </v-card-text>
-                    </template>
-                    <template v-slot:actions>
-                        <v-progress-linear :active="connecting" height="4" indeterminate></v-progress-linear>
-                        <v-spacer></v-spacer>
-                        <v-btn v-if="connecting" icon="mdi-cancel" @click="abort_connect()">
-                        </v-btn>
-                        <v-btn @click="connect()" :disabled="connecting">
-                            Connect
-                        </v-btn>
-                    </template>
-                </v-card>
-            </v-dialog>
-        </v-window>
-
-        <!-- Absolute Status Bar -->
-        <v-sheet class="status-bar" elevation="6">
-            <!-- <v-menu v-model="menu" :close-on-content-click="false" location="end">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props">
-                        ASI 2600MC Bin1 (1.0 °C)
-                    </v-btn>
-                </template>
-            </v-menu> -->
-            <v-spacer/>
-            <v-spacer/>
-            <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
-        </v-sheet>
-
-        <LeftPanel v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair" :autoHide="false"/>
-        <RigthPanel v-model:active-panel="activePanel"/>
-    </v-container>
-</template>
 
 <style scoped>
 .fits-canvas {

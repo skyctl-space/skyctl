@@ -154,7 +154,7 @@ function handleRemoveConnection() {
       <v-card v-for="(telescope, i) in telescopes" :key="i" class="panel"
         :class="{ maximized: maximizedIndex === i, hidden: maximizedIndex !== null && maximizedIndex !== i }"
         elevation="4">
-        <v-card-title density="compact" class="d-flex justify-space-between align-center text-white">
+        <v-card-title density="compact" class="d-flex justify-space-between align-center text-white pa-1">
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn size="x-small" icon="mdi-dots-vertical" v-bind="props">
@@ -173,7 +173,7 @@ function handleRemoveConnection() {
 
 
           <v-spacer></v-spacer>
-          <span class="text-body">{{ telescope.config.name }} ({{ telescope.config.type }})</span>
+          <span class="text-body-1">{{ telescope.config.name }} ({{ telescope.config.type }})</span>
           <v-spacer></v-spacer>
           <v-icon block size="x-small" :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
           <v-btn size="x-small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
