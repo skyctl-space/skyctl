@@ -5,10 +5,10 @@ import { Connection, ConnectionType, TelescopeConnection } from "./types";
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";
 
-import ASIAirMainView from "./ASIAirMainView.vue"
-import INDIMainView from "./IndiMainView.vue";
-import AlpacaMainView from "./AlpacaMainView.vue";
-import SeeStarMainView from "./SeeStarMainView.vue";
+import ASIAirMainView from "@/asiair-components/ASIAirMainView.vue"
+import INDIMainView from "@/IndiMainView.vue";
+import AlpacaMainView from "@/AlpacaMainView.vue";
+import SeeStarMainView from "@/SeeStarMainView.vue";
 
 async function startASIAIRDiscovery() {
   await invoke("start_asiair_discovery");
@@ -157,26 +157,26 @@ function handleRemoveConnection() {
         <v-card-title density="compact" class="d-flex justify-space-between align-center text-white">
           <v-menu>
             <template v-slot:activator="{ props }">
-              <v-btn icon="mdi-dots-vertical" v-bind="props">
+              <v-btn size="x-small" icon="mdi-dots-vertical" v-bind="props">
               </v-btn>
             </template>
             <v-list>
               <v-list-item>Connection string: {{ telescope.config.host }}</v-list-item>
               <v-list-item>
-                <v-btn prepend-icon="mdi-delete" text="Remove" @click="confirmRemoveConnection(telescope.configIdx)" />
+                <v-btn block size="x-small" prepend-icon="mdi-delete" text="Remove" @click="confirmRemoveConnection(telescope.configIdx)" />
               </v-list-item>
               <v-list-item v-if="telescope.connected">
-                <v-btn prepend-icon="mdi-cancel" text="Disconnect" @click="telescope.connected = false" />
+                <v-btn block size="x-small" prepend-icon="mdi-cancel" text="Disconnect" @click="telescope.connected = false" />
               </v-list-item>
             </v-list>
           </v-menu>
 
 
           <v-spacer></v-spacer>
-          <span>{{ telescope.config.name }} ({{ telescope.config.type }})</span>
+          <span class="text-body">{{ telescope.config.name }} ({{ telescope.config.type }})</span>
           <v-spacer></v-spacer>
-          <v-icon :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
-          <v-btn size="small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
+          <v-icon block size="x-small" :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
+          <v-btn size="x-small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
             <v-icon>{{ maximizedIndex === i ? "mdi-arrow-collapse" : "mdi-arrow-expand" }}</v-icon>
           </v-btn>
         </v-card-title>

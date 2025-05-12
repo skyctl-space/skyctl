@@ -1,6 +1,8 @@
 use std::vec;
+mod debayer;
+mod downsample;
 
-use crate::{
+use {
     debayer::{debayer_image, BayerPattern},
     downsample::{downsample, downsample_rgb},
 };

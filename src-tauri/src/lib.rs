@@ -1,10 +1,7 @@
 #[cfg(target_os = "macos")]
 mod corelocation;
 
-mod asiairdiscovery;
-mod stf;
-mod debayer;
-mod downsample;
+mod asiair;
 mod rawimage;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,9 +27,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
-            asiairdiscovery::start_asiair_discovery,
-            asiairdiscovery::stop_asiair_discovery,
-            stf::load_fits_image,
+            asiair::discovery::start_asiair_discovery,
+            asiair::discovery::stop_asiair_discovery,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

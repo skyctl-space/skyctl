@@ -1,5 +1,5 @@
 <template>
-    <v-sheet v-show="props.showHistogram" class="floating-controls" elevation="8"
+    <v-sheet v-show="props.showHistogram" class="floating-controls" elevation="8" border rounded
         :style="{ left: controlsPos.x + 'px', top: controlsPos.y + 'px', position: 'absolute', zIndex: 10, minWidth: '800px', cursor: dragging ? 'grabbing' : 'grab' }"
         @mousedown.stop="onControlsMouseDown">
         <v-row dense no-gutters class="d-flex" justify="space-between" align="start">
@@ -19,9 +19,10 @@
         </v-row>
         <v-row dense no-gutters class="mt-2">
             <v-col cols="2" class="d-flex align-center justify-center">
-                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="ml-2 mr-2" @click="resetStretch">Reset</v-btn>
+                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="ml-2 mr-2"
+                    @click="resetStretch">Reset</v-btn>
             </v-col>
-            <v-col cols="1"/>
+            <v-col cols="1" />
             <v-col cols="2" class="d-flex align-center justify-center">
                 <v-btn size="x-small" prepend-icon="mdi-chart-histogram" block class="ml-2 mr-2"
                     :variant="logScale ? 'outlined' : 'flat'" @click="toggleLogScale">Log Scale</v-btn>
@@ -48,8 +49,23 @@
                 thumb-label></v-slider>
         </v-row>
     </v-sheet>
-    <v-container fluid fill-height style="height:100%;width:100%;padding:0;">
-        <canvas :ref="el => canvasRefs[props.telescopeIndex] = el as HTMLCanvasElement" class="fits-canvas"></canvas>
+    <v-container fluid fill-height style="padding: 0;">
+        <div class="image-viewer-wrapper">
+            <canvas :ref="el => canvasRefs[props.telescopeIndex] = el as HTMLCanvasElement"
+                class="fits-canvas"></canvas>
+
+            <div v-if="props.showCrosshair" class="crosshair-overlay">
+                <!-- Full edge-to-edge HTML lines -->
+                <div class="horizontal-line"></div>
+                <div class="vertical-line"></div>
+
+                <!-- Centered SVG circles -->
+                <svg class="circle-overlay" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                    <circle v-for="(r, i) in [4, 8, 20, 30]" :key="i" :cx="50" :cy="50" :r="r" stroke="red"
+                        stroke-opacity="0.5" fill="none" stroke-width="0.3" />
+                </svg>
+            </div>
+        </div>
     </v-container>
 </template>
 
@@ -63,6 +79,7 @@ import { listen, Event } from '@tauri-apps/api/event';
 const props = defineProps({
     telescopeIndex: { type: Number, required: true },
     showHistogram: { type: Boolean, default: true },
+    showCrosshair: { type: Boolean, default: false }, // New prop to toggle crosshair
 });
 // v-model for busy state
 const busy = defineModel<boolean>('busy');
@@ -113,7 +130,7 @@ watch([
 });
 
 // --- Floating Controls (Histogram) Position and Drag State ---
-const controlsPos = ref({ x: 40, y: 40 });
+const controlsPos = ref({ x: 5, y: 5 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
 function onControlsMouseDown(e: MouseEvent) {
@@ -601,6 +618,8 @@ function renderImage(index: number, width: number, height: number, pixels: Float
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    updateHistogram(props.telescopeIndex);
 }
 
 // --- Auto-Stretch Parameter Calculation ---
@@ -626,10 +645,59 @@ function autoStretchParams(
 </script>
 
 <style scoped>
+.image-viewer-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 .fits-canvas {
     width: 100% !important;
     height: 100% !important;
-    background: black;
+    background: linear-gradient(180deg, #000000, #434343);
+    display: block;
+}
+
+.crosshair-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.horizontal-line,
+.vertical-line {
+    position: absolute;
+    background-color: red;
+    opacity: 0.5;
+}
+
+.horizontal-line {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    transform: translateY(-0.5px);
+}
+
+.vertical-line {
+    left: 50%;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    transform: translateX(-0.5px);
+}
+
+/* SVG overlay for circles */
+.circle-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 .v-row.d-flex.align-center.justify-center {

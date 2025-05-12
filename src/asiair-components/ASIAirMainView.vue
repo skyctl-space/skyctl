@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { inject, ref, Ref, watch } from 'vue'
-import { TelescopeConnection } from './types'
-import { invoke } from '@tauri-apps/api/core';
+import { TelescopeConnection } from '../types'
 import ImageViewer from './ImageViewer.vue'
+import RigthPanel from './RigthPanel.vue'
+import LeftPanel from './LeftPanel.vue'
 
 const { telescopeIndex = 0 } = defineProps({
     telescopeIndex: Number
@@ -47,54 +48,32 @@ watch(
 // Active panel index
 const activePanel = ref(0);
 
-// Icons for each panel
-const panelData = [
-    { icon: 'mdi-image', title: 'Preview' },
-    { icon: 'mdi-image-filter-center-focus-weak', title: 'Focus' },
-    { icon: 'mdi-auto-mode', title: 'Autorun' },
-    { icon: 'mdi-list-status', title: 'Plan' },
-    { icon: 'mdi-video', title: 'Video' }
+const panels = [
+    { title: 'Preview'},
+    { title: 'Focus'},
+    { title: 'Autorun'},
+    { title: 'Plan'},
+    { title: 'Live'},
+    { title: 'Video'}
 ];
 
-// Function to jump to a specific panel
-function goToPanel(index: number) {
-    activePanel.value = index;
-}
-
-async function loadFits() {
-    // Never render the preview in a resolution larger than the screen
-    isBusy.value = true
-    await invoke('load_fits_image', { telescopeIndex: telescopeIndex, displayWidth: window.innerWidth, displayHeight: window.innerHeight });
-}
-   
-
 const isBusy = ref(false)
-
-// const binModes = [
-//     { title: 'Bin1', value: 0 },
-//     { title: 'Bin2', value: 1 },
-//     { title: 'Bin3', value: 2 },
-//     { title: 'Bin4', value: 3 }
-// ]
-
-// const binMode = ref(0)
-
 const showHistogram = ref(false)
+const showCrosshair = ref(false)
 
 </script>
 
 <template>
-    <v-container fluid class="fill-height pa-0 border-0 d-flex flex-column">
+    <v-container fluid class="fill-height pa-0 border-0 d-flex flex-column" style="position:relative;">
 
-        <!-- v-window with 5 panels -->
         <v-window v-model="activePanel" direction="vertical" class="fill-height pa-0 border-0 window-container">
-            <v-window-item v-for="(panel, index) in panelData" class="fill-height pa-0 border-0">
+            <v-window-item v-for="(panel, index) in panels" class="fill-height pa-0 border-0">
                 <div class="window-item-container fill-height d-flex flex-column position-relative overflow-hidden">
                     <!-- Watermark inside each item -->
                     <div class="watermark-text">{{ panel.title }}</div>
-                    <!-- <v-img v-if="index === 0" src="/gaia_milkyway.jpg" class="flex-grow-1 w-100 h-100 pa-0 ma-0" 
-                    </v-img> -->
-                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" v-if="index === 0"/>
+
+                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 0"/>
+                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 1"/>
                 </div>
             </v-window-item>
 
@@ -136,29 +115,8 @@ const showHistogram = ref(false)
             <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
         </v-sheet>
 
-        <v-btn class="floating-btn" icon @click="loadFits()">
-            <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-
-        <v-btn class="floating-btn-histogram" icon @click="showHistogram = !showHistogram">
-            <v-icon>mdi-chart-histogram</v-icon>
-        </v-btn>
-
-        <v-speed-dial location="left center" transition="fade-transition">
-            <template v-slot:activator="{ props: activatorProps }">
-                <v-fab class="speed-dial" v-bind="activatorProps" size="large" icon>
-                    <v-icon>{{ panelData[activePanel].icon }}</v-icon>
-                </v-fab>
-            </template>
-
-            <v-tooltip v-for="(panel, index) in panelData" :text="panel.title" location="top">
-                <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" icon @click="goToPanel(index)">
-                        <v-icon>{{ panel.icon }}</v-icon>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-        </v-speed-dial>
+        <LeftPanel v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair" :autoHide="false"/>
+        <RigthPanel v-model:active-panel="activePanel"/>
     </v-container>
 </template>
 
