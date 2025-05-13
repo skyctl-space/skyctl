@@ -172,11 +172,15 @@ function handleRemoveConnection() {
               </v-list-item>
             </v-list>
           </v-menu>
-
+          <v-img v-if="telescope.config.type === ConnectionType.ASIAIR" src="/ASIair_logo.png" :height="30"/>
+          <v-spacer v-else></v-spacer>
 
           <v-spacer></v-spacer>
-          <span class="text-body-1">{{ telescope.config.name }} ({{ telescope.config.type }})</span>
+          <span class="text-body-1">{{ telescope.config.name }}</span>
+
           <v-spacer></v-spacer>
+          <v-spacer></v-spacer>
+
           <v-icon block size="x-small" :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
           <v-btn size="x-small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
             <v-icon>{{ maximizedIndex === i ? "mdi-arrow-collapse" : "mdi-arrow-expand" }}</v-icon>
