@@ -7,8 +7,10 @@
                     <!-- Watermark inside each item -->
                     <div class="watermark-text">{{ panel.title }}</div>
 
-                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 0"/>
-                   <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram" :show-crosshair="showCrosshair" v-if="index === 1"/>
+                    <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
+                        :show-crosshair="showCrosshair" v-if="index === 0" />
+                    <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
+                        :show-crosshair="showCrosshair" v-if="index === 1" />
                 </div>
             </v-window-item>
 
@@ -20,20 +22,31 @@
                                 telescopes?.[telescopeIndex]?.config?.host }}...</p>
                             <p v-else>You are not connected to the ASIAir at {{
                                 telescopes?.[telescopeIndex]?.config?.host
-                                }}</p>
+                            }}</p>
                         </v-card-text>
                     </template>
                     <template v-slot:actions>
-                        <v-progress-linear :active="connecting" height="4" indeterminate></v-progress-linear>
+                        <v-progress-linear v-if="!connectionErrorMessage" :active="connecting" height="4" indeterminate></v-progress-linear>
+                        <v-messages color="red" :messages="connectionErrorMessage"
+                            :active="!!connectionErrorMessage"></v-messages>
                         <v-spacer></v-spacer>
-                        <v-btn v-if="connecting" icon="mdi-cancel" @click="abort_connect()">
-                        </v-btn>
+                        <!-- <v-btn v-if="connecting" icon="mdi-cancel" @click="abort_connect()"/> -->
                         <v-btn @click="connect()" :disabled="connecting">
                             Connect
                         </v-btn>
                     </template>
                 </v-card>
             </v-dialog>
+            <v-dialog :attach=true contained v-model="reconnectDialog" width="auto" persistent>
+                <v-card max-width="400" prepend-icon="mdi-update"
+                    text="Connection with the ASIAir is lost, attempting to reconnect..."
+                    title="Attempting to reconnect">
+                    <template v-slot:actions>
+                        <v-progress-circular indeterminate></v-progress-circular>
+                    </template>
+                </v-card>
+            </v-dialog>
+
         </v-window>
 
         <!-- Absolute Status Bar -->
@@ -45,49 +58,114 @@
                     </v-btn>
                 </template>
             </v-menu> -->
-            <v-spacer/>
-            <v-spacer/>
+            <v-spacer />
+            <v-spacer />
             <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
         </v-sheet>
 
-        <LeftPanel v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair" :autoHide="false"/>
-        <RigthPanel v-model:active-panel="activePanel"/>
+        <LeftPanel v-if="maximized" v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair"
+            :autoHide="false" />
+        <RigthPanel v-if="maximized" v-model:active-panel="activePanel" />
     </v-container>
 </template>
 
 <script setup lang="ts">
-import { inject, ref, Ref, watch } from 'vue'
+import { computed, inject, ref, Ref, watch } from 'vue'
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from "@tauri-apps/api/event";
 import { TelescopeConnection } from '../types'
 import ImageViewer from './ImageViewer.vue'
 import RigthPanel from './RigthPanel.vue'
 import LeftPanel from './LeftPanel.vue'
 
-const { telescopeIndex = 0 } = defineProps({
-    telescopeIndex: Number
+const { telescopeIndex = 0, maximized = false } = defineProps({
+    telescopeIndex: Number,
+    maximized: Boolean,
+    shouldBeConnected: Boolean
+})
+
+interface ConnectionChange {
+  guid: string;
+  connected: boolean;
+}
+
+// Listen for the "asiair_connection_state" event
+listen<ConnectionChange>("asiair_connection_state", (event) => {
+  const { guid, connected } = event.payload;
+
+  if (guid !== telescopes?.value[telescopeIndex].config.guid) {
+    // Ignore events for other ASIAir devices
+    return;
+  }
+  if (!connected) {
+    reconnecting.value = true;
+  } else {
+    reconnecting.value = false;
+  }
+});
+
+
+const reconnectDialog = computed(() => {
+    return reconnecting.value && !disconnected.value
 })
 
 const telescopes = inject<Ref<TelescopeConnection[]>>('telescopes');
 
+// Shows a modal when already connected and tryin got reconnect
+const reconnecting = ref(false);
+// Defines if we are supposed to be disconnected or connected
 const disconnected = ref<boolean>(true);
+// Defines if we are in the process of connecting for the first time
+const connecting = ref<boolean>(false);
 
-const connecting = ref(false);
-let connectTimeout: ReturnType<typeof setTimeout>;
+const connectionErrorMessage = ref('');
 
-function connect() {
+async function connect() {
+    console.log('testpoint ' + telescopes?.value[telescopeIndex].config.host);
+    if (!disconnected.value) {
+        // Already connected, no need to connect again
+        return;
+    }
+
     connecting.value = true;
-    connectTimeout = setTimeout(() => {
+    connectionErrorMessage.value = '';
+
+    await invoke("asiair_attach", {
+        guid: `${telescopes?.value[telescopeIndex].config.guid}`,
+        connection: `${telescopes?.value[telescopeIndex].config.host}`,
+    }).then(() => {
+        // We are now connected
         disconnected.value = false;
+        reconnecting.value = false;
         connecting.value = false;
-        if (telescopes && telescopes.value[telescopeIndex]) {
+        if (telescopes?.value[telescopeIndex]) {
             telescopes.value[telescopeIndex].connected = true;
         }
-    }, 1000);
+    }).catch((error: any) => {
+        // We failed to connect
+        connectionErrorMessage.value = error;
+        connecting.value = false;
+        disconnected.value = true;
+        reconnecting.value = false;
+    });
 }
 
-function abort_connect() {
+async function disconnect() {
+    if (disconnected.value) {
+        return;
+    }
+
+    await invoke("asiair_deattach", {
+        'guid': `${telescopes?.value[telescopeIndex].config.guid}`,
+    }).then(() => {
+    }).catch((error: any) => {
+        // We failed to disconnect
+        console.log(error);
+    });
+    // We are now disconnected
     connecting.value = false;
     disconnected.value = true;
-    clearTimeout(connectTimeout);
+    reconnecting.value = false;
 }
 
 // Watch for changes in the specific telescope's connected property
@@ -96,7 +174,9 @@ watch(
     (newConnected) => {
         // If 'connected' changes, update 'disconnected' accordingly
         if (typeof newConnected === 'boolean') {
-            disconnected.value = !newConnected;
+            if (!newConnected) {
+                disconnect();
+            }
         }
     },
     { immediate: true } // Ensure it runs immediately to reflect initial state
@@ -106,12 +186,12 @@ watch(
 const activePanel = ref(0);
 
 const panels = [
-    { title: 'Preview'},
-    { title: 'Focus'},
-    { title: 'Autorun'},
-    { title: 'Plan'},
-    { title: 'Live'},
-    { title: 'Video'}
+    { title: 'Preview' },
+    { title: 'Focus' },
+    { title: 'Autorun' },
+    { title: 'Plan' },
+    { title: 'Live' },
+    { title: 'Video' }
 ];
 
 const isBusy = ref(false)

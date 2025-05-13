@@ -21,10 +21,10 @@ async function stopASIAIRDiscovery() {
 interface ASIAIRDevice {
   title: string;
   value: string;
+  guid: string;
 }
 
 listen("discovered_device", (event) => {
-  console.log("Device found:", event.payload);
   detectedASIAIRDevices.value = event.payload as ASIAIRDevice[];
 });
 
@@ -81,6 +81,7 @@ const newConnection = ref<Connection>({
   description: '',
   type: ConnectionType.ASIAIR,
   host: '',
+  guid: '',
 });
 const newConnectionErrorMessage = ref('');
 
@@ -112,6 +113,7 @@ function resetNewConnection() {
     description: '',
     type: ConnectionType.ASIAIR,
     host: '',
+    guid: '',
   };
 }
 
@@ -182,7 +184,7 @@ function handleRemoveConnection() {
         </v-card-title>
 
         <v-card-text class="panel-body pa-0 border-0">
-          <ASIAirMainView v-if="telescope.config.type === ConnectionType.ASIAIR" :telescopeIndex="i"/>
+          <ASIAirMainView v-if="telescope.config.type === ConnectionType.ASIAIR" :telescopeIndex="i" :maximized="maximizedIndex === i"/>
           <INDIMainView v-if="telescope.config.type === ConnectionType.INDI" :telescopeIndex="i"/>
           <AlpacaMainView v-if="telescope.config.type === ConnectionType.ALPACA" :telescopeIndex="i"/>
           <SeeStarMainView v-if="telescope.config.type === ConnectionType.SEESTAR" :telescopeIndex="i"/>
@@ -203,7 +205,7 @@ function handleRemoveConnection() {
             Discovering ASIAir devices... <v-progress-circular indeterminate></v-progress-circular>
             <v-list elevation="4">
               <v-list-item v-for="device in detectedASIAIRDevices" :key="device.value"
-                @click="newConnection.host = device.value; newConnection.name = device.title" class="cursor-pointer">
+                @click="newConnection.host = 'auto'; newConnection.name = device.title; newConnection.guid=device.guid" class="cursor-pointer">
                 <template #prepend>
                   <v-icon icon="mdi-telescope" />
                 </template>

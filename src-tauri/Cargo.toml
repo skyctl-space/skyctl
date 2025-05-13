@@ -42,7 +42,8 @@ base64 = "0.22"
 rayon = "1.10.0"
 lazy_static = "1.5.0"
 fitsrs = "0.3.2"
-asiair = { path = "../dependencies/asiair/lib" }
+asiair-crate = { path = "../dependencies/asiair/lib", package = "asiair" } 
+tokio = { version = "1.45.0", features = ["full"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.0"

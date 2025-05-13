@@ -26,6 +26,8 @@ export interface Connection {
     description: string;
     type: ConnectionType;
     host: string;
+    // Used only for autodetect connections
+    guid: string;
 }
 
 export interface TelescopeConnection {

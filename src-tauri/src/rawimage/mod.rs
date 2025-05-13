@@ -2,17 +2,17 @@ use std::vec;
 mod debayer;
 mod downsample;
 
+use fitsrs::{card::Value, Fits, Pixels, HDU}; // Updated imports for fitsrs
+use ndarray::{s, Array, Array2, Ix2, Ix3};
+use rayon::join;
+use std::io::BufReader;
 use {
     debayer::{debayer_image, BayerPattern},
     downsample::{downsample, downsample_rgb},
 };
-use fitsrs::{Fits, HDU, Pixels, card::Value}; // Updated imports for fitsrs
-use ndarray::{s, Array, Array2, Ix2, Ix3};
-use rayon::join;
-use std::io::BufReader;
 
 #[derive(serde::Serialize)]
-pub struct Stat{
+pub struct Stat {
     min: f32,
     max: f32,
     avg: f32,
@@ -90,16 +90,17 @@ impl RawImage {
             let image = hdu_list.get_data(&hdu);
 
             if let Pixels::I16(data) = image.pixels() {
-                let raw_image_i16 = Array::from_shape_vec((naxis2, naxis1), data.collect::<Vec<_>>())
-                    .map_err(|_| "Failed to convert to 2D array".to_string())?;
+                let raw_image_i16 =
+                    Array::from_shape_vec((naxis2, naxis1), data.collect::<Vec<_>>())
+                        .map_err(|_| "Failed to convert to 2D array".to_string())?;
 
                 let raw_image_i32;
 
-                if let Some(Value::Integer{ value, ..}) = hdu.get_header().get("BZERO") {
+                if let Some(Value::Integer { value, .. }) = hdu.get_header().get("BZERO") {
                     let bzero = value;
                     let mut bscale = 1i64;
 
-                    if let Some(Value::Integer{ value, ..}) = hdu.get_header().get("BSCALE") {
+                    if let Some(Value::Integer { value, .. }) = hdu.get_header().get("BSCALE") {
                         bscale = *value;
                     }
 
@@ -109,7 +110,7 @@ impl RawImage {
                 }
 
                 let bayer_pattern = match hdu.get_header().get("BAYERPAT") {
-                    Some(Value::String{ value, .. }) => match value.as_str() {
+                    Some(Value::String { value, .. }) => match value.as_str() {
                         "RGGB" => BayerPattern::RGGB,
                         "BGGR" => BayerPattern::BGGR,
                         "GRBG" => BayerPattern::GRBG,
@@ -191,17 +192,17 @@ impl RawImage {
                 let v16 = v.min(u16::MAX as i32) as u16;
                 rgb.extend_from_slice(&[v16, v16, v16]);
             }
-    
+
             return RawRGBImage {
                 width: width.try_into().unwrap(),
                 height: height.try_into().unwrap(),
                 pixels: rgb,
-                stats: stats
+                stats: stats,
             };
         } else {
             if let Some(debayered_image) = self.debayered_image.as_ref() {
                 let (height, width, _) = debayered_image.dim();
-                let mut rgb: Vec<u16>  = Vec::with_capacity(width * height * 3);
+                let mut rgb: Vec<u16> = Vec::with_capacity(width * height * 3);
                 let stats = self.calculate_stats();
 
                 for pixel in debayered_image.outer_iter() {
@@ -217,29 +218,29 @@ impl RawImage {
                     width: width.try_into().unwrap(),
                     height: height.try_into().unwrap(),
                     pixels: rgb,
-                    stats: stats
+                    stats: stats,
                 };
             } else {
                 let (height, width) = self.raw_image.dim();
-                let mut rgb: Vec<u16>  = Vec::with_capacity(width * height * 3);
+                let mut rgb: Vec<u16> = Vec::with_capacity(width * height * 3);
                 let stats = self.calculate_stats();
-    
+
                 for &v in self.raw_image.iter() {
                     let v16 = v.min(u16::MAX as i32) as u16;
                     rgb.extend_from_slice(&[v16, v16, v16]);
                 }
-        
+
                 return RawRGBImage {
                     width: width.try_into().unwrap(),
                     height: height.try_into().unwrap(),
                     pixels: rgb,
-                    stats: stats
+                    stats: stats,
                 };
             }
         }
-     }
+    }
 
-     fn calculate_stats(&self) -> Vec<Stat> {
+    fn calculate_stats(&self) -> Vec<Stat> {
         let mut results = vec![];
         let start_time = std::time::Instant::now();
         if self.bayer_pattern == BayerPattern::NONE {
@@ -263,6 +264,5 @@ impl RawImage {
         let elapsed_time = start_time.elapsed();
         log::info!("Stats took: {:?}", elapsed_time);
         results
-     }
- 
+    }
 }

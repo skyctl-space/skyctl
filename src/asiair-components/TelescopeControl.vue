@@ -40,19 +40,19 @@
 
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 const tracking = ref(false);
 
 const steps = [0.25, 0.5, 1, 2, 4, 8, 20, 60, 720, 1440]
 const rate = ref(9)
 
-const _selectedRate = computed({
-    get: () => rate.value,
-    set: (val: number) => {
-        rate.value = val
-    }
-})
+// const selectedRate = computed({
+//     get: () => rate.value,
+//     set: (val: number) => {
+//         rate.value = val
+//     }
+// })
 
 function move(direction: string) {
     console.log(`Moving ${direction} at rate ${rate.value}`);

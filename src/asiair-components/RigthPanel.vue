@@ -41,7 +41,7 @@ import ExposureSelector from './ExposureSelector.vue';
 import TelescopeControl from './TelescopeControl.vue';
 import { ref } from 'vue';
 
-const showControl = ref(true);
+const showControl = ref(false);
 
 const activePanel = defineModel<number>('activePanel', { required: true });
 
