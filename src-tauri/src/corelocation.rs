@@ -6,11 +6,11 @@ use objc2_core_location::{
 };
 use objc2_foundation::{MainThreadMarker, NSArray, NSObjectProtocol};
 use once_cell::sync::Lazy;
-use tauri::AppHandle;
-use tauri::Emitter;
+use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
-use std::sync::RwLock;
+use tauri::AppHandle;
+use tauri::Emitter;
 
 #[derive(Debug, Copy, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,8 +19,7 @@ pub struct LastLocation {
     pub longitude: f64,
 }
 
-pub static LAST_LOCATION: Lazy<RwLock<Option<LastLocation>>> =
-    Lazy::new(|| RwLock::new(None));
+pub static LAST_LOCATION: Lazy<RwLock<Option<LastLocation>>> = Lazy::new(|| RwLock::new(None));
 
 // Define the MyLocationDelegate class
 define_class!(
@@ -49,7 +48,7 @@ define_class!(
                 let coord = unsafe { loc.coordinate() };
                 log::info!("Updated location: {}, {}", coord.latitude, coord.longitude);
                 let mut lock = LAST_LOCATION.write().unwrap();
-  
+
                 *lock = Some(LastLocation {
                     latitude: coord.latitude,
                     longitude: coord.longitude,
