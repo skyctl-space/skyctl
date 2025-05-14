@@ -49,7 +49,7 @@
                 thumb-label></v-slider>
         </v-row>
     </v-sheet>
-    <v-container fluid fill-height style="padding: 0;">
+    <v-container fluid style="padding: 0; height: 100%;">
         <div class="image-viewer-wrapper">
             <canvas :ref="el => canvasRefs[props.telescopeIndex] = el as HTMLCanvasElement"
                 class="fits-canvas"></canvas>

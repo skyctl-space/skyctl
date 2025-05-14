@@ -1,6 +1,5 @@
 <template>
     <v-container fluid class="fill-height pa-0 border-0 d-flex flex-column" style="position:relative;">
-
         <v-window v-model="activePanel" direction="vertical" class="fill-height pa-0 border-0 window-container">
             <v-window-item v-for="(panel, index) in panels" class="fill-height pa-0 border-0">
                 <div class="window-item-container fill-height d-flex flex-column position-relative overflow-hidden">
@@ -66,6 +65,8 @@
         <LeftPanel v-if="maximized" v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair"
             :autoHide="false" />
         <RigthPanel v-if="maximized" v-model:active-panel="activePanel" />
+        <StatusBar v-if="maximized"/>
+        <MenuBar v-if="maximized" />
     </v-container>
 </template>
 
@@ -77,6 +78,8 @@ import { TelescopeConnection } from '../types'
 import ImageViewer from './ImageViewer.vue'
 import RigthPanel from './RigthPanel.vue'
 import LeftPanel from './LeftPanel.vue'
+import StatusBar from './StatusBar.vue'
+import MenuBar from './MenuBar.vue'
 
 const { telescopeIndex = 0, maximized = false } = defineProps({
     telescopeIndex: Number,
