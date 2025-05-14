@@ -147,7 +147,7 @@ function handleRemoveConnection() {
 </script>
 
 <template>
-  <v-container fluid class="pa-4 fill-height d-flex flex-column" style="width: 100%">
+  <v-container fluid class="pa-2 fill-height d-flex flex-column" style="width: 100%">
     <v-toolbar border density="compact" class="mb-4" :class="{ hidden: maximizedIndex !== null }">
       <v-toolbar-title text="Telescope Control"></v-toolbar-title>
       <v-btn elevation="4" prepend-icon="mdi-plus" @click="showConnectionModal()">Add Connection...</v-btn>
