@@ -37,7 +37,13 @@ It integrates with Stellarium Web Engine and provides tools for managing telesco
 
 ## Contributing
 
+This project is done completely by volunteers in their free time.
+
 Contributions are welcome! Please visit our [building page](docs/Building.md) to learn how to build and modify the code.
+
+If you want to support our efforts, please considering sponsoring from Github. The donations will help to pay for infrastructure and encourage us to continue development.
+
+[![Sponsor](https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#white)](https://github.com/sponsors/skyctl-space)
 
 ## License
 
