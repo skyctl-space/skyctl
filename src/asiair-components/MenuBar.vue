@@ -1,12 +1,11 @@
 <template>
   <v-sheet
-    class="menu-bar d-flex align-center justify-end px-4 py-2"
+    class="menu-bar d-flex align-center justify-end px-2"
     elevation="2"
   >
     <v-menu
       v-for="(item, index) in menuItems"
       :key="item.name"
-      v-model="menuIndex"
       :model-value="menuIndex === index"
       :close-on-content-click="false"
       transition="scale-transition"
@@ -103,8 +102,8 @@ function getMenuComponent(menuName: string) {
   border-radius: 8px;
   position: absolute;
   top: 0;
+  width: auto;
   right: 0;
-  left: 0;
   z-index: 10;
   pointer-events: auto;
 }

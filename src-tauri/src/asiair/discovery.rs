@@ -84,8 +84,3 @@ pub fn start_asiair_discovery(app: AppHandle) {
             }
         });
 }
-
-pub fn stop_asiair_discovery() {
-    log::info!("Stoping Asiair discovery...");
-    DISCOVERY_RUNNING.store(false, Ordering::SeqCst);
-}

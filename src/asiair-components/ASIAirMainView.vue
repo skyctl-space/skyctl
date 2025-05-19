@@ -6,9 +6,9 @@
                     <!-- Watermark inside each item -->
                     <div class="watermark-text">{{ panel.title }}</div>
 
-                    <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
+                    <ImageViewer :maximized :guid="telescope_guid" :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
                         :show-crosshair="showCrosshair" v-if="index === 0" />
-                    <ImageViewer :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
+                    <ImageViewer :maximized :guid="telescope_guid" :telescopeIndex="telescopeIndex" v-model:busy="isBusy" :show-histogram="showHistogram"
                         :show-crosshair="showCrosshair" v-if="index === 1" />
                 </div>
             </v-window-item>
@@ -64,8 +64,8 @@
 
         <LeftPanel v-if="maximized" v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair"
             :autoHide="false" />
-        <RigthPanel v-if="maximized" v-model:active-panel="activePanel" />
-        <StatusBar v-if="maximized"/>
+        <RigthPanel v-if="maximized" v-model:active-panel="activePanel" :guid="telescope_guid" />
+        <StatusBar v-if="maximized" :guid="telescope_guid"/>
         <MenuBar v-if="maximized" />
     </v-container>
 </template>
@@ -82,9 +82,16 @@ import StatusBar from './StatusBar.vue'
 import MenuBar from './MenuBar.vue'
 
 const { telescopeIndex = 0, maximized = false } = defineProps({
-    telescopeIndex: Number,
+    telescopeIndex: {
+        type: Number,
+        required: true,
+    },
     maximized: Boolean,
     shouldBeConnected: Boolean
+})
+
+const telescope_guid = computed(() => {
+    return telescopes?.value?.[telescopeIndex]?.config?.guid ?? ''
 })
 
 interface ConnectionChange {
@@ -96,7 +103,7 @@ interface ConnectionChange {
 listen<ConnectionChange>("asiair_connection_state", (event) => {
   const { guid, connected } = event.payload;
 
-  if (guid !== telescopes?.value[telescopeIndex].config.guid) {
+  if (guid !== telescope_guid.value) {
     // Ignore events for other ASIAir devices
     return;
   }
@@ -124,7 +131,6 @@ const connecting = ref<boolean>(false);
 const connectionErrorMessage = ref('');
 
 async function connect() {
-    console.log('testpoint ' + telescopes?.value[telescopeIndex].config.host);
     if (!disconnected.value) {
         // Already connected, no need to connect again
         return;

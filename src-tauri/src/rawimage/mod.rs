@@ -7,11 +7,21 @@ use ndarray::{s, Array, Array2, Ix2, Ix3};
 use rayon::join;
 use std::io::BufReader;
 use {
-    debayer::{debayer_image, BayerPattern},
+    debayer::debayer_image,
     downsample::{downsample, downsample_rgb},
 };
 
-#[derive(serde::Serialize)]
+#[allow(dead_code)]
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum BayerPattern {
+    NONE,
+    RGGB,
+    BGGR,
+    GRBG,
+    GBRG,
+}
+
+#[derive(serde::Serialize, Clone, Debug)]
 pub struct Stat {
     min: f32,
     max: f32,
@@ -79,6 +89,39 @@ fn calc_channel_stats(data: &Array2<i32>) -> Stat {
 }
 
 impl RawImage {
+    pub fn from_bytes_i16(
+        raw_image: Vec<u8>,
+        width: usize,
+        height: usize,
+        bayer_pattern: BayerPattern,
+        bzero: i64,
+        bscale: i64,
+    ) -> Self {
+        // Interpret the raw_image Vec<u8> as a Vec<i16>
+        let raw_image_i16: Vec<i16> = raw_image
+            .chunks_exact(2)
+            .map(|b| i16::from_be_bytes([b[0], b[1]]))
+            .collect();
+
+        let raw_image_i32 = Array::from_shape_vec(
+            (height, width),
+            raw_image_i16
+            .into_iter()
+            .map(|x| ((x as i64 + bzero) * bscale) as i32)
+            .collect(),
+        )
+        .expect("Failed to convert raw_image to 2D array");
+        Self {
+            raw_image: raw_image_i32,
+            bayer_pattern,
+            debayered_image: None,
+            downsampled: false,
+            downsampled_width: 0,
+            downsampled_height: 0,
+        }
+    }
+
+
     pub fn from_reader(reader: BufReader<std::fs::File>) -> Result<Self, String> {
         let mut hdu_list = Fits::from_reader(reader);
 

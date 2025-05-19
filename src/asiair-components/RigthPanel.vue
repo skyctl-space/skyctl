@@ -26,7 +26,7 @@
             <v-spacer />
             <v-select v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
 
-            <Shutter :exposureTime="exposureTime" />
+            <Shutter :exposureTime="exposureTime" :guid="props.guid" />
             <ExposureSelector v-model="exposureTime" />
             <v-spacer />
             <v-btn icon="mdi-download" disabled></v-btn>
@@ -40,6 +40,13 @@ import Shutter from './Shutter.vue';
 import ExposureSelector from './ExposureSelector.vue';
 import TelescopeControl from './TelescopeControl.vue';
 import { ref } from 'vue';
+
+const props = defineProps({
+    guid: {
+        type: String,
+        required: true,
+    }
+});
 
 const showControl = ref(false);
 
@@ -74,15 +81,14 @@ function goToPanel(index: number) {
 </script>
 
 <style scoped>
-
 .floating-right-box {
-  position: absolute;
-  top: 50%;
-  right: 5px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: flex-start;
-  z-index: 100;
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: flex-start;
+    z-index: 100;
 }
 
 
@@ -117,9 +123,9 @@ function goToPanel(index: number) {
 }
 
 .telescope-control-panel {
-  margin-right: 8px;
-  padding: 12px;
-  border-radius: 8px;
-  min-width: 200px;
+    margin-right: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    min-width: 200px;
 }
 </style>

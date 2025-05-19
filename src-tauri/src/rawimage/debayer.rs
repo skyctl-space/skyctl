@@ -1,15 +1,6 @@
 use ndarray::{Array2, Array3};
 use rayon::prelude::*;
-
-#[allow(dead_code)]
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub enum BayerPattern {
-    NONE,
-    RGGB,
-    BGGR,
-    GRBG,
-    GBRG,
-}
+use super::BayerPattern;
 
 fn debayer_rggb(data: &Array2<i32>) -> Array3<i32> {
     let (h, w) = data.dim();

@@ -11,12 +11,27 @@
 
         <!-- Optional Right content -->
         <div class="text-caption text-end">
-            <!-- Put other info here if needed -->
+            <v-chip v-if="cameraError || cameraInfo" variant="outlined" class="gap-2 margin-right-4">
+            <span v-if="cameraError" class="text-red">{{ cameraError }}</span>
+            <span v-if="cameraInfo" class="text-blue">{{ cameraInfo }}</span>
+            </v-chip>
+            <v-progress-circular v-if="cameraBusy" color="dark-blue" indeterminate></v-progress-circular>
         </div>
     </v-sheet>
 </template>
 
 <script setup lang="ts">
+import { useASIAirController } from '@/asiair-components/useASIAirController';
+
+const props = defineProps({
+  guid: {
+    type: String,
+    required: true,
+  },
+});
+
+const { cameraInfo, cameraError, cameraBusy} = useASIAirController(props.guid);
+
 const cameraName = 'ASI294MC Pro'
 const resolution = '4144×2822'
 const temperature = '-10.5'

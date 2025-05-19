@@ -1,17 +1,32 @@
 pub mod discovery;
-
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, ipc::Channel};
 
 use super::ASIAirState;
 use asiair_crate::ASIAir;
 use serde::Serialize;
+
 use std::net::Ipv4Addr;
 use tauri::State;
+use crate::rawimage::{RawImage, RawRGBImage, Stat, BayerPattern};
 
 #[derive(Clone, Serialize, Debug)]
 struct ConnectionChange {
     guid: String,
     connected: bool,
+}
+
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "event", content = "data")]
+pub enum ImageProgress {
+    Fetching,
+    Downsampling,
+    Debayering,
+    Rendering {
+        width: u32, 
+        height: u32, 
+        stats: Vec<Stat>,
+    },
+    Error(String),
 }
 
 #[tauri::command]
@@ -119,6 +134,66 @@ pub async fn asiair_deattach(
     log::debug!("Disconnecting ASIAir with guid: {}", guid);
     // Disconnect the ASIAir instance
     removed_asiair.disconnect().await;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_current_img(
+    state: State<'_, ASIAirState>,
+    guid: String,
+    sender: Channel<ImageProgress>,
+    binarySender: Channel<&[u8]>
+) -> Result<(), String> {
+    let mut asiair = {
+        let asiairs = state.asiairs.lock().unwrap();
+        if let Some(asiair) = asiairs.get(&guid) {
+            asiair.clone()
+        } else {
+            sender.send(ImageProgress::Error("That ASIAir is not currently connected".to_string())).unwrap();
+            return Err("That ASIAir is not currently connected".to_string());
+        }
+    };
+
+    sender.send(ImageProgress::Fetching).unwrap_or_else(|e| {
+        log::error!("Failed to send 'Fetching': {:?}", e);
+    });
+    let (img, width, height) = asiair
+        .get_current_img()
+        .await
+        .map_err(|e| {
+            sender.send(ImageProgress::Error(format!("Failed to get current image: {:?}", e))).unwrap();
+            format!("Failed to get current image: {:?}", e)
+        })?;
+
+    let mut raw_image = RawImage::from_bytes_i16(img, width as usize, height as usize, BayerPattern::RGGB, 32768, 1);
+
+    sender.send(ImageProgress::Debayering).unwrap();
+    raw_image.debayer().map_err(|e| {
+        sender.send(ImageProgress::Error(e.to_string())).unwrap();
+        e.to_string()
+    })?;
+
+    //sender.send(ImageProgress::Downsampling).unwrap();
+    // raw_image.downsample(display_width, display_height).map_err(|e| e.to_string())?;
+
+    let image_data : RawRGBImage = raw_image.get_raw_image();
+
+    sender.send(ImageProgress::Rendering {
+        width: image_data.width,
+        height: image_data.height,
+        stats: image_data.stats.clone(),
+    }).unwrap();
+
+    assert!(image_data.width * image_data.height * 3 == image_data.pixels.len() as u32);
+
+    use bytemuck::cast_slice;
+    let image_bytes: Vec<u8> = cast_slice(image_data.pixels.as_slice()).to_vec();
+
+//    let image_bytes = [0 as u8; 2048];
+    binarySender.send(&image_bytes).unwrap_or_else(|e| {
+        log::error!("Failed to send image bytes: {:?}", e);
+    });
 
     Ok(())
 }
