@@ -27,10 +27,20 @@
                     <!-- Forecast display -->
                     <div v-if="!loading && forecast.length" class="d-flex">
                         <!-- ❄️ Fixed left labels column -->
-                        <div style="width: 120px;" class="fixed-labels">
+                        <div class="fixed-labels">
                             <v-row dense>
                                 <v-col cols="12" class="font-weight-bold text-center pa-">Time</v-col>
                                 <v-divider class="pa-1" />
+
+                                <v-col cols="12" class="d-flex align-center">
+                                  <v-icon size="18" class="mr-1">mdi-white-balance-sunny</v-icon> Sun Elev
+                                </v-col>
+                                <v-col cols="12" class="d-flex align-center">
+                                  <v-icon size="18" class="mr-1">mdi-weather-night</v-icon> Moon Elev
+                                </v-col>
+
+                                <v-divider class="pa-1" />
+
                                 <v-col cols="12" class="d-flex align-center">
                                     <v-icon size="18" class="mr-1">mdi-thermometer</v-icon> Temp
                                 </v-col>
@@ -86,7 +96,6 @@
                                     <div class="forecast-day-header">
                                         {{ formatDate(group.date) }}
                                     </div>
-
                                     <template v-for="(entry, idx) in group.entries" :key="idx">
                                         <div class="forecast-hour" :class="{
                                             'current-hour': isCurrentLocalHour(entry.time),
@@ -97,26 +106,35 @@
                                                     {{ formatHour(entry.time) }}
                                                 </v-col>
                                                 <v-divider class="pa-1" />
-                                                <v-col cols="12" class="text-center">{{ entry.temperature_2m
-                                                }}°C</v-col>
-                                                <v-col cols="12" class="text-center">{{ entry.apparent_temperature
-                                                }}°C</v-col>
+
+                                                <v-col cols="12" class="text-center ml-0" :style="{ backgroundColor: `rgba(251, 192, 45, ${illuminationBars[_index].sunElevations[DateTime.fromISO(entry.time, { zone: timezone }).hour].toFixed(2)})` }">
+                                                    {{ Math.round(illuminationBars[_index].sunElevations[DateTime.fromISO(entry.time, { zone: timezone }).hour] * 100) }}%
+                                                </v-col>
+                                                <v-col cols="12" class="text-center ml-0" :style="{backgroundColor: `rgba(144, 202, 249, ${illuminationBars[_index].moonElevations[DateTime.fromISO(entry.time, { zone: timezone }).hour].toFixed(2)})`}">
+                                                    {{ Math.round(illuminationBars[_index].moonElevations[DateTime.fromISO(entry.time, { zone: timezone }).hour] * 100) }}%
+                                                </v-col>
                                                 <v-divider class="pa-1" />
-                                                <v-col cols="12" class="text-center"
+
+                                                <v-col cols="12" class="text-center">{{ entry.temperature_2m
+                                                    }}°C</v-col>
+                                                <v-col cols="12" class="text-center">{{ entry.apparent_temperature
+                                                    }}°C</v-col>
+                                                <v-divider class="pa-1" />
+                                                <v-col cols="12" class="text-center ml-1"
                                                     :style="{ backgroundColor: cloudBackground(entry.cloudcover), color: entry.cloudcover > 75 ? 'black' : 'white' }">
                                                     {{ entry.cloudcover }}%</v-col>
-                                                <v-col cols="12" class="text-center"
+                                                <v-col cols="12" class="text-center ml-1"
                                                     :style="{ backgroundColor: cloudBackground(entry.cloudcoverlow), color: entry.cloudcoverlow > 75 ? 'black' : 'white' }">
                                                     {{ entry.cloudcoverlow }}%</v-col>
-                                                <v-col cols="12" class="text-center"
+                                                <v-col cols="12" class="text-center ml-1"
                                                     :style="{ backgroundColor: cloudBackground(entry.cloudcovermid), color: entry.cloudcovermid > 75 ? 'black' : 'white' }">
                                                     {{ entry.cloudcovermid }}%</v-col>
-                                                <v-col cols="12" class="text-center"
+                                                <v-col cols="12" class="text-center ml-1"
                                                     :style="{ backgroundColor: cloudBackground(entry.cloudcoverhigh), color: entry.cloudcoverhigh > 75 ? 'black' : 'white' }">
                                                     {{ entry.cloudcoverhigh }}%</v-col>
                                                 <v-divider class="pa-1" />
                                                 <v-col cols="12" class="text-center">{{ entry.relative_humidity_2m
-                                                }}%</v-col>
+                                                    }}%</v-col>
                                                 <v-col cols="12" class="text-center">{{ entry.precipitation }}%</v-col>
                                                 <v-col cols="12" class="text-center">{{ entry.rain }}mm</v-col>
                                                 <v-col cols="12" class="text-center">{{ entry.dewpoint_2m }}°C</v-col>
@@ -158,6 +176,60 @@
 import { ref, computed, watchEffect } from 'vue'
 import { settings } from './settings'
 import { DateTime } from 'luxon'
+import SunCalc from 'suncalc'
+
+interface DaylightInfo {
+    date: string
+    sunrise: string
+    sunset: string
+    moonrise: string | null
+    moonset: string | null
+    sunriseRaw: Date
+    sunsetRaw: Date
+    moonriseRaw: Date | null
+    moonsetRaw: Date | null
+}
+
+const daylightInfo = computed(() => {
+    return groupedForecast.value.map(group => {
+        const date = DateTime.fromISO(group.date, { zone: timezone.value }).startOf('day')
+        const times = SunCalc.getTimes(date.toJSDate(), latitude.value, longitude.value)
+        const moonTimes = SunCalc.getMoonTimes(date.toJSDate(), latitude.value, longitude.value)
+
+        return {
+            date: group.date,
+            sunrise: DateTime.fromJSDate(times.sunrise).setZone(timezone.value).toFormat('HH:mm'),
+            sunset: DateTime.fromJSDate(times.sunset).setZone(timezone.value).toFormat('HH:mm'),
+            moonrise: moonTimes.rise ? DateTime.fromJSDate(moonTimes.rise).setZone(timezone.value).toFormat('HH:mm') : null,
+            moonset: moonTimes.set ? DateTime.fromJSDate(moonTimes.set).setZone(timezone.value).toFormat('HH:mm') : null,
+            sunriseRaw: times.sunrise,
+            sunsetRaw: times.sunset,
+            moonriseRaw: moonTimes.rise ?? null,
+            moonsetRaw: moonTimes.set ?? null,
+        }
+    })
+})
+
+const illuminationBars = computed(() => {
+    return daylightInfo.value.map(day => {
+        const sunElevations = Array(24).fill(0)
+        const moonElevations = Array(24).fill(0)
+
+        for (let h = 0; h < 24; h++) {
+            const dt = DateTime.fromISO(day.date, { zone: timezone.value }).plus({ hours: h })
+            const jsDate = dt.toJSDate()
+
+            const sunPos = SunCalc.getPosition(jsDate, latitude.value, longitude.value)
+            const moonPos = SunCalc.getMoonPosition(jsDate, latitude.value, longitude.value)
+
+            // Altitude in radians, max ~1.57 (90°); clamp to 0–1 range
+            sunElevations[h] = Math.max(0, sunPos.altitude) / (Math.PI / 2)
+            moonElevations[h] = Math.max(0, moonPos.altitude) / (Math.PI / 2)
+        }
+
+        return { sunElevations, moonElevations }
+    })
+})
 
 const selectedDays = ref(3)
 
@@ -362,7 +434,7 @@ function cloudBackground(clouds: number): string {
 }
 
 .fixed-labels {
-    min-width: 100px;
+    min-width: 120px;
     padding-right: 8px;
     border-right: 1px solid rgba(255, 255, 255, 0.15);
 
@@ -370,5 +442,23 @@ function cloudBackground(clouds: number): string {
 
 .current-hour {
     background-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.sun-elevation-row,
+.moon-elevation-row {
+  display: flex;
+  flex-direction: row;
+  margin-left: 124px;
+  margin-bottom: 2px;
+}
+
+.elevation-cell {
+  flex: 0 0 80px;
+  height: 18px;
+  font-size: 10px;
+  text-align: center;
+  line-height: 18px;
+  color: white;
+  font-weight: bold;
 }
 </style>
