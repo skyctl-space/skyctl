@@ -189,6 +189,25 @@ asiair_simple_setter_cmd! {
 }
 
 
+asiair_simple_setter_cmd! {
+    pub fn main_camera_set_exposure(
+        state: State<'_, ASIAirState>,
+        guid: String,
+        exposure: u64
+    ) {
+        main_camera_set_exposure
+    }
+}
+
+asiair_simple_getter_cmd! {
+    pub fn main_camera_get_exposure(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> u64 {
+        main_camera_get_exposure
+    }
+}
+
 #[tauri::command]
 pub async fn main_camera_get_current_img(
     state: State<'_, ASIAirState>,

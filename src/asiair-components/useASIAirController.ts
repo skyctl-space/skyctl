@@ -408,6 +408,18 @@ function createASIAirState(guid: string, connection: string | undefined) {
         }); // Let the callbacks handle the state changes
     }
 
+    async function main_camera_set_exposure(exposure: number) {
+        await invoke("main_camera_set_exposure", {
+            guid: state.guid,
+            exposure: exposure,
+        }).then(() => {
+            console.log(`[${state.guid}] Camera exposure set to ${exposure}`);
+        }).catch((error: any) => {
+            console.error(`[${state.guid}] Error setting camera exposure:`, error);
+        });
+    }
+
+
     return {
         ...toRefs(state.public),
         connect,
@@ -415,6 +427,7 @@ function createASIAirState(guid: string, connection: string | undefined) {
         trigger_capture,
         main_camera_open,
         main_camera_close,
+        main_camera_set_exposure,
     };
 }
 

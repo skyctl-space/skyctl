@@ -55,6 +55,7 @@ pub fn run() {
             asiair::asiair_attach,
             asiair::asiair_deattach,
             asiair::camera_cmds::get_connected_cameras,
+            // Main camera commands
             asiair::camera_cmds::main_camera_open,
             asiair::camera_cmds::main_camera_close,
             asiair::camera_cmds::main_camera_get_name,
@@ -62,6 +63,9 @@ pub fn run() {
             asiair::camera_cmds::main_camera_get_state,
             asiair::camera_cmds::main_camera_get_info,
             asiair::camera_cmds::main_camera_get_current_img,
+            asiair::camera_cmds::main_camera_get_exposure,
+            asiair::camera_cmds::main_camera_set_exposure,
+            // Guide camera commands
             asiair::camera_cmds::guide_camera_get_name,
             asiair::camera_cmds::guide_camera_set_name,
         ])
