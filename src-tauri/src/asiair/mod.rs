@@ -90,6 +90,18 @@ pub async fn asiair_attach(
         }
     });
 
+    let mut camera_state_rx = asiair.subscribe_camera_state_change();
+    let app_clone = app.clone();
+    let should_be_connected = asiair.should_be_connected.clone();
+    let guid_clone = guid.clone();
+
+    tokio::spawn(async move {
+        while camera_state_rx.changed().await.is_ok()
+            && should_be_connected.load(std::sync::atomic::Ordering::SeqCst){
+            app_clone.emit("asiair_camera_state_change", guid_clone.clone()).expect("Failed to emit device list");
+        }
+    });
+
     let mut asiairs = state.asiairs.lock().unwrap();
     asiairs.insert(guid.clone(), asiair);
 

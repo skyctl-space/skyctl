@@ -1,19 +1,19 @@
 <template>
     <v-sheet class="status-bar d-flex align-center justify-space-between px-4 py-2" elevation="2">
         <!-- Left content -->
-        <div class="d-flex align-center flex-wrap gap-4 text-caption">
-            <span>📷 {{ cameraName }}</span>
-            <span>🖼 {{ resolution }}</span>
-            <span>🌡 {{ temperature }}°C</span>
+        <div :v-show="mainCamera.isConnected" class="d-flex align-center flex-wrap gap-4 text-caption">
+            <v-icon icon="mdi-camera" class="text-blue" /> <span> {{ mainCameraName }} </span>
+            <!-- <span>🖼 {{ resolution }}</span> -->
+            <!-- <span>🌡 {{ temperature }}°C</span>
             <span>💧 Anti-dew: {{ antiDew ? 'On' : 'Off' }}</span>
-            <span>❄ Cooler: {{ coolerPercent }}%</span>
+            <span>❄ Cooler: {{ coolerPercent }}%</span> -->
         </div>
 
         <!-- Optional Right content -->
         <div class="text-caption text-end">
-            <v-chip v-if="mainCamera?.errorMessage || mainCamera?.errorMessage" variant="outlined" class="gap-2 margin-right-4">
-            <span v-if="mainCamera?.errorMessage" class="text-red">{{ mainCamera?.errorMessage }}</span>
-            <span v-if="mainCamera?.errorMessage" class="text-blue">{{ mainCamera?.errorMessage }}</span>
+            <v-chip v-if="mainCamera.errorMessage || mainCamera.infoMessage" variant="outlined" class="gap-2 margin-right-4">
+            <span v-if="mainCamera.errorMessage" class="text-red">{{ mainCamera?.errorMessage }}</span>
+            <span v-if="mainCamera.infoMessage" class="text-blue">{{ mainCamera?.infoMessage }}</span>
             </v-chip>
             <v-progress-circular v-if="mainCamera?.isBusy" color="dark-blue" indeterminate></v-progress-circular>
         </div>
@@ -30,13 +30,13 @@ const props = defineProps({
   },
 });
 
-const { mainCamera } = useASIAirController(props.guid, undefined);
+const { mainCamera, mainCameraName } = useASIAirController(props.guid, undefined);
 
-const cameraName = 'ASI294MC Pro'
-const resolution = '4144×2822'
-const temperature = '-10.5'
-const antiDew = true
-const coolerPercent = 72
+
+// const resolution = '4144×2822'
+// const temperature = '-10.5'
+// const antiDew = true
+// const coolerPercent = 72
 </script>
 
 <style scoped>

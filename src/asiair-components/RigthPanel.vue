@@ -24,10 +24,10 @@
                 </v-tooltip>
             </v-speed-dial>
             <v-spacer />
-            <v-select :disabled="!mainCamera" v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
+            <v-select :disabled="!mainCamera.isConnected" v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
 
-            <Shutter :disabled="!mainCamera" :exposureTime="exposureTime" :guid="props.guid" />
-            <ExposureSelector :disabled="!mainCamera" v-model="exposureTime" />
+            <Shutter :disabled="!mainCamera.isConnected" :exposureTime="exposureTime" :guid="props.guid" />
+            <ExposureSelector :disabled="!mainCamera.isConnected" v-model="exposureTime" />
             <v-spacer />
             <v-btn icon="mdi-download" disabled></v-btn>
         </div>
@@ -39,7 +39,7 @@
 import Shutter from './Shutter.vue';
 import ExposureSelector from './ExposureSelector.vue';
 import TelescopeControl from './TelescopeControl.vue';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useASIAirController } from '@/asiair-components/useASIAirController';
 
 const props = defineProps({
@@ -59,12 +59,43 @@ const exposureTime = ref(1.0); // seconds
 
 const selectedBin = ref('Bin1'); // Default selected bin
 
-const bins = [
+var bins = [
     'Bin1',
-    'Bin2',
-    'Bin3',
-    'Bin4',
 ]
+
+function updateBins() {
+    const info = mainCamera.value.info;
+    if (info && info.bins) {
+        bins = [];
+        for (const bin of info.bins) {
+            bins.push("Bin" + bin);
+        }
+        if (!bins.includes(selectedBin.value)) {
+            selectedBin.value = bins[0] || '';
+        }
+    }
+}
+
+// Populate bins on load
+updateBins();
+
+watch(() => mainCamera.value.info, () => {
+    updateBins();
+});
+
+watch(() => mainCamera.value.info, (newInfo) => {
+    if (newInfo) {
+        // Update the selected bin based on the camera's supported bins
+        const supportedBins = newInfo.bins;
+        bins = [];
+        for (const bin of supportedBins) {
+            bins.push("Bin" + bin);
+        }
+        if (!bins.includes(selectedBin.value)) {
+            selectedBin.value = bins[0] || '';
+        }
+    }
+});
 
 // Icons for each panel
 const panelData = [

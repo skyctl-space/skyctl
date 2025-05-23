@@ -1,7 +1,7 @@
 use tauri::{ipc::Channel};
 
 use super::ASIAirState;
-use asiair_crate::camera::{ConnectedCamera, CameraState};
+use asiair_crate::camera::{ConnectedCamera, CameraState, CameraInfo};
 use serde::Serialize;
 
 use tauri::State;
@@ -27,143 +27,173 @@ pub enum ImageProgress {
     Error(String),
 }
 
-#[tauri::command]
-pub async fn get_connected_cameras(
-    state: State<'_, ASIAirState>,
-    guid: String,
-) -> Result<Vec<ConnectedCamera>, String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
+/// Macro to generate tauri command functions that call an ASIAir method with no parameters and return Result<T, String>
+macro_rules! asiair_simple_getter_cmd {
+    (
+        $(#[$outer:meta])* // Allow doc comments
+        $vis:vis fn $fn_name:ident(
+            $state:ident : State<'_, ASIAirState>,
+            $guid:ident : String
+        ) -> $ret:ty {
+            $method:ident
+        }
+    ) => {
+        $(#[$outer])*
+        #[tauri::command]
+        $vis async fn $fn_name(
+            $state: State<'_, ASIAirState>,
+            $guid: String,
+        ) -> Result<$ret, String> {
+            let mut asiair = {
+                let asiairs = $state.asiairs.lock().unwrap();
+                if let Some(asiair) = asiairs.get(&$guid) {
+                    asiair.clone()
+                } else {
+                    return Err("That ASIAir is not currently connected".to_string());
+                }
+            };
+            asiair
+                .$method()
+                .await
+                .map_err(|e| format!("Failed to call {}: {:?}", stringify!($method), e))
         }
     };
-
-    let cameras = asiair
-        .get_connected_cameras()
-        .await
-        .map_err(|e| format!("Failed to get connected cameras: {:?}", e))?;
-
-    Ok(cameras)
 }
 
-#[tauri::command]
-pub async fn main_camera_get_state(
-    state: State<'_, ASIAirState>,
-    guid: String,
-) -> Result<CameraState, String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
+/// Macro to generate tauri command functions that call an ASIAir method with parameters and return Result<(), String>
+macro_rules! asiair_simple_setter_cmd {
+    (
+        $(#[$outer:meta])* // Allow doc comments
+        $vis:vis fn $fn_name:ident(
+            $state:ident : State<'_, ASIAirState>,
+            $guid:ident : String,
+            $( $param:ident : $ptype:ty ),* $(,)?
+        ) {
+            $method:ident
+        }
+    ) => {
+        $(#[$outer])*
+        #[tauri::command]
+        $vis async fn $fn_name(
+            $state: State<'_, ASIAirState>,
+            $guid: String,
+            $( $param : $ptype ),*
+        ) -> Result<(), String> {
+            let mut asiair = {
+                let asiairs = $state.asiairs.lock().unwrap();
+                if let Some(asiair) = asiairs.get(&$guid) {
+                    asiair.clone()
+                } else {
+                    return Err("That ASIAir is not currently connected".to_string());
+                }
+            };
+            asiair
+                .$method($( $param ),*)
+                .await
+                .map_err(|e| format!("Failed to call {}: {:?}", stringify!($method), e))?;
+            Ok(())
         }
     };
-
-    let camera_state = asiair
-        .main_camera_get_state()
-        .await
-        .map_err(|e| format!("Failed to get camera state: {:?}", e))?;
-
-    Ok(camera_state)
 }
 
-#[tauri::command]
-pub async fn main_camera_open(
-    state: State<'_, ASIAirState>,
-    guid: String,
-) -> Result<(), String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
-        }
-    };
-
-    asiair
-        .main_camera_open()
-        .await
-        .map_err(|e| format!("Failed to open camera: {:?}", e))?;
-
-    Ok(())
+asiair_simple_getter_cmd! {
+    /// Get the main camera name
+    pub fn main_camera_get_name(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> String {
+        main_camera_get_name
+    }
 }
 
-#[tauri::command]
-pub async fn main_camera_close(
-    state: State<'_, ASIAirState>,
-    guid: String,
-) -> Result<(), String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
-        }
-    };
-
-    asiair
-        .main_camera_close()
-        .await
-        .map_err(|e| format!("Failed to close camera: {:?}", e))?;
-
-    Ok(())
+asiair_simple_getter_cmd! {
+    /// Get all connected cameras
+    pub fn main_camera_get_info(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> CameraInfo {
+        main_camera_get_info
+    }
 }
 
-#[tauri::command]
-pub async fn main_camera_set_name(
-    state: State<'_, ASIAirState>,
-    guid: String,
-    camera_name: String,
-) -> Result<(), String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
-        }
-    };
-
-    asiair
-        .main_camera_set_name(camera_name)
-        .await
-        .map_err(|e| format!("Failed to set main camera: {:?}", e))?;
-
-    Ok(())
+asiair_simple_getter_cmd! {
+    /// Get the guide camera name
+    pub fn guide_camera_get_name(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> String {
+        guide_camera_get_name
+    }
 }
 
-#[tauri::command]
-pub async fn main_camera_get_name(
-    state: State<'_, ASIAirState>,
-    guid: String,
-) -> Result<String, String> {
-    let mut asiair = {
-        let asiairs = state.asiairs.lock().unwrap();
-        if let Some(asiair) = asiairs.get(&guid) {
-            asiair.clone()
-        } else {
-            return Err("That ASIAir is not currently connected".to_string());
-        }
-    };
-
-    let camera_name = asiair
-        .main_camera_get_name()
-        .await
-        .map_err(|e| format!("Failed to get main camera name: {:?}", e))?;
-
-    Ok(camera_name)
+asiair_simple_getter_cmd! {
+    /// Get all connected cameras
+    pub fn get_connected_cameras(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> Vec<ConnectedCamera> {
+        get_connected_cameras
+    }
 }
+
+asiair_simple_getter_cmd! {
+    /// Get the main camera state
+    pub fn main_camera_get_state(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> CameraState {
+        main_camera_get_state
+    }
+}
+
+asiair_simple_getter_cmd! {
+    /// Open the main camera
+    pub fn main_camera_open(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> () {
+        main_camera_open
+    }
+}
+
+asiair_simple_getter_cmd! {
+    /// Close the main camera
+    pub fn main_camera_close(
+        state: State<'_, ASIAirState>,
+        guid: String
+    ) -> () {
+        main_camera_close
+    }
+}
+
+asiair_simple_setter_cmd! {
+    /// Set the main camera name
+    pub fn main_camera_set_name(
+        state: State<'_, ASIAirState>,
+        guid: String,
+        name: String
+    ) {
+        main_camera_set_name
+    }
+}
+
+asiair_simple_setter_cmd! {
+    /// Set the guide camera name
+    pub fn guide_camera_set_name(
+        state: State<'_, ASIAirState>,
+        guid: String,
+        name: String
+    ) {
+        guide_camera_set_name
+    }
+}
+
 
 #[tauri::command]
 pub async fn main_camera_get_current_img(
     state: State<'_, ASIAirState>,
     guid: String,
+    bayer_pattern: BayerPattern,
     sender: Channel<ImageProgress>,
     binary_sender: Channel<&[u8]>
 ) -> Result<(), String> {
@@ -189,7 +219,7 @@ pub async fn main_camera_get_current_img(
             format!("Failed to get current image: {:?}", e)
         })?;
 
-    let mut raw_image = RawImage::from_bytes_i16(img, width as usize, height as usize, BayerPattern::RGGB, 32768, 1);
+    let mut raw_image = RawImage::from_bytes_i16(img, width as usize, height as usize, bayer_pattern, 32768, 1);
 
     sender.send(ImageProgress::Debayering).unwrap();
     raw_image.debayer().map_err(|e| {

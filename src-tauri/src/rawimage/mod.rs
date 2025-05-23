@@ -11,8 +11,8 @@ use {
     downsample::{downsample, downsample_rgb},
 };
 
-#[allow(dead_code)]
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug, serde::Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
 pub enum BayerPattern {
     NONE,
     RGGB,

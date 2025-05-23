@@ -13,6 +13,7 @@
       <template #activator="{ props }">
         <v-btn
           v-bind="props"
+          :disabled="item.disabled"
           :icon="item.icon"
           variant="text"
           size="small"
@@ -63,15 +64,15 @@ const EAFIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
 const RotatorIcon =`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12.039 23q-2.139 0-4.053-.76q-1.915-.761-3.402-2.104t-2.436-3.173T1 13h1q.2 1.896 1.04 3.526q.839 1.63 2.157 2.83t3.019 1.899t3.615.734l-1.935-1.935l.708-.708l3.462 3.462q-.504.12-1.011.157q-.507.035-1.016.035M15 18v-2H9.616q-.672 0-1.144-.472T8 14.385V9H6V8h2V6h1v8.385q0 .23.192.423t.423.192H19v1h-3v2zm0-4V9.616q0-.231-.192-.424T14.385 9H10V8h4.385q.67 0 1.143.472q.472.472.472 1.144V14zm7-3q-.194-1.896-1.036-3.526t-2.161-2.83t-3.018-1.899t-3.616-.734l1.935 1.935l-.708.708l-3.462-3.462q.505-.12 1.011-.156Q11.452 1 11.962 1q2.138 0 4.053.76q1.914.761 3.401 2.105t2.436 3.173T23 11z"/></svg>`
 
 const menuItems = [
-  { name: 'Settings', icon: 'mdi-cog' },
-  { name: 'Camera', icon: 'mdi-camera-outline' },
-  { name: 'Guide', icon: 'mdi-crosshairs-gps' },
-  { name: 'Mount', icon: 'mdi-telescope' },
-  { name: 'EFW', svg: EFWIcon },
-  { name: 'EAF', svg: EAFIcon },
-  { name: 'Rotator', svg: RotatorIcon },
-  { name: 'Storage', icon: 'mdi-sd' },
-  { name: 'Info', icon: 'mdi-information-outline' }
+  { name: 'Settings', icon: 'mdi-cog', disabled: true },
+  { name: 'Camera', icon: 'mdi-camera-outline', disabled: false },
+  { name: 'Guide', icon: 'mdi-crosshairs-gps', disabled: true },
+  { name: 'Mount', icon: 'mdi-telescope', disabled: true },
+  { name: 'EFW', svg: EFWIcon, disabled: true },
+  { name: 'EAF', svg: EAFIcon, disabled: true },
+  { name: 'Rotator', svg: RotatorIcon, disabled: true },
+  { name: 'Storage', icon: 'mdi-sd', disabled: true },
+  { name: 'Info', icon: 'mdi-information-outline', disabled: true }
 ]
 
 // Function to get the component based on menu name

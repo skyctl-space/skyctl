@@ -1,4 +1,4 @@
-import { reactive, toRefs } from 'vue';
+import { reactive, toRefs, toRef, Ref } from 'vue';
 import { invoke, Channel } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";
 
@@ -42,6 +42,14 @@ type ImageProgress =
   }
   | { event: 'error'; data: string };
 
+enum BayerPattern {
+  NONE = 'NONE',
+  RGGB = 'RGGB',
+  BGGR = 'BGGR',
+  GRBG = 'GRBG',
+  GBRG = 'GBRG',
+}
+
 type Camera = {
     name: string;
     info: CameraInfo;
@@ -49,6 +57,7 @@ type Camera = {
     infoMessage: string | null;
     errorMessage: string | null;
     isBusy: boolean;
+    bayer_pattern: BayerPattern;
 }
 
 type ConnectedCamera = {
@@ -68,8 +77,9 @@ type ASIAirPublicState = {
     availableCameras: ConnectedCamera[];
     mainCameraName: string | null;
     mainCameraState: CameraState;
+    guideCameraName: string | null;
     guideCameraState: CameraState;
-    mainCamera: Camera | null;
+    mainCamera: Camera;
     currentImage: CurrentImage;
 }
 
@@ -98,6 +108,55 @@ listen<ConnectionChange>("asiair_connection_state", (event) => {
   }
 });
 
+listen<string>("asiair_camera_state_change", async (event) => {
+  const guid = event.payload;
+  const controller = asiairControllers.get(guid);
+  if (controller) {
+    console.log(`[${guid}] Camera state changed`);
+    await invoke<CameraState>("main_camera_get_state", {
+        guid: guid,
+    }).then((cameraState) => {
+        controller.mainCameraState.value = cameraState;
+        if (cameraState.state === 'idle') {
+            controller.mainCamera.value.isConnected = true;
+            updateCameraInfo(guid, controller.mainCamera);
+        } else {
+            controller.mainCamera.value.isConnected = false;
+        }
+    }).catch((error: any) => {
+        console.error(`[${guid}] Error getting main camera state:`, error);
+    });
+  }
+});
+
+async function updateCameraInfo(guid: string, mainCamera: Ref<Camera>) {
+    await invoke<CameraInfo>("main_camera_get_info", {
+        guid: guid,
+    }).then((cameraInfo) => {
+        mainCamera.value.info = cameraInfo;
+        switch (cameraInfo.debayer_pattern) {
+            case 'RG':
+                mainCamera.value.bayer_pattern = BayerPattern.RGGB;
+                break;
+            case 'BG':
+                mainCamera.value.bayer_pattern = BayerPattern.BGGR;
+                break;
+            case 'GR':
+                mainCamera.value.bayer_pattern = BayerPattern.GRBG;
+                break;
+            case 'GB':
+                mainCamera.value.bayer_pattern = BayerPattern.GBRG;
+                break;
+            default:
+                mainCamera.value.bayer_pattern = BayerPattern.NONE;
+                break;
+        }
+    }).catch((error: any) => {
+        console.error(`[${guid}] Error getting camera info:`, error);
+    });
+}
+
+
 async function onConnection(state: ASIAirState) {
     // Get list of cameras available
     await invoke<ConnectedCamera[]>("get_connected_cameras", {
@@ -114,6 +173,12 @@ async function onConnection(state: ASIAirState) {
         guid: state.guid,
     }).then((cameraState) => {
         state.public.mainCameraState = cameraState;
+        if (cameraState.state === 'idle') {
+            state.public.mainCamera.isConnected = true;
+            updateCameraInfo(state.guid, toRef(state.public, 'mainCamera'));
+        } else {
+            state.public.mainCamera.isConnected = false;
+        }
     }).catch((error: any) => {
         console.error(`[${state.guid}] Error getting main camera state:`, error);
         state.public.mainCameraState = { state: 'close' };
@@ -126,6 +191,15 @@ async function onConnection(state: ASIAirState) {
     }).catch((error: any) => {
         console.error(`[${state.guid}] Error getting main camera name:`, error);
         state.public.mainCameraName = null;
+    });
+
+    await invoke<string>("guide_camera_get_name", {
+        guid: state.guid,
+    }).then((cameraName) => {
+        state.public.guideCameraName = cameraName;
+    }).catch((error: any) => {
+        console.error(`[${state.guid}] Error getting main camera name:`, error);
+        state.public.guideCameraName = null;
     });
 }
 
@@ -145,8 +219,26 @@ function createASIAirState(guid: string, connection: string | undefined) {
             availableCameras: [],
             mainCameraName: null,
             mainCameraState: { state: 'close' },
+            guideCameraName: null,
             guideCameraState: { state: 'close' },
-            mainCamera: null,
+            mainCamera: {
+                name: "",
+                info: {
+                    chip_size: [0, 0],
+                    bins: [],
+                    pixel_size_um: 0,
+                    unity_gain: 0,
+                    has_cooler: false,
+                    is_color: false,
+                    is_usb3_host: false,
+                    debayer_pattern: "",
+                },
+                bayer_pattern: BayerPattern.NONE,
+                isConnected: false,
+                infoMessage: null,
+                errorMessage: null,
+                isBusy: false,
+            },
             currentImage: {
                 data: null,
                 width: null,
@@ -263,8 +355,10 @@ function createASIAirState(guid: string, connection: string | undefined) {
             mainCamera.isBusy = false;
         };
 
-        await invoke('get_current_img', {
+
+        await invoke('main_camera_get_current_img', {
             guid: state.guid,
+            bayerPattern: state.public.mainCamera.bayer_pattern,
             sender: imgNotificationChannel,
             binarySender: imgDataChannel,
         }).catch((e) => {
@@ -273,21 +367,45 @@ function createASIAirState(guid: string, connection: string | undefined) {
         });
     }
 
-    async function main_camera_open(_camera_name: string) {
+    async function main_camera_open(camera_name: string) {
+        if ((state.public.mainCameraState.state !== 'close') &&
+            (state.public.mainCameraName !== camera_name)) {
+            throw new Error("Another camera is already open");
+        }
+
+        await invoke("main_camera_set_name", {
+            guid: state.guid,
+            name: camera_name,
+        }).then(() => {
+            console.log(`[${state.guid}] Camera name set to ${camera_name}`);
+            state.public.mainCameraName = camera_name;
+        }
+        ).catch((error: any) => {
+            console.error(`[${state.guid}] Error setting camera name:`, error);
+            state.public.mainCameraName = null;
+        });
+            
+
+        await invoke("main_camera_open", {
+            guid: state.guid
+        }); // Let the callbacks handle the state changes
+    }
+
+    async function main_camera_close() {
         let mainCamera = state.public.mainCamera;
         if (!mainCamera) {
             throw new Error("No main camera selected");
         }
-
-        await invoke("open_camera", {
+        
+        await invoke("main_camera_close", {
             guid: state.guid
         }).then(() => {
-            console.log(`[${state.guid}] Camera opened`);
-            mainCamera.isConnected = true;
-        }).catch((error: any) => {
-            console.error(`[${state.guid}] Error opening camera:`, error);
+            console.log(`[${state.guid}] Camera closed`);
             mainCamera.isConnected = false;
-        });
+        }).catch((error: any) => {
+            console.error(`[${state.guid}] Error closing camera:`, error);
+            mainCamera.isConnected = true;
+        }); // Let the callbacks handle the state changes
     }
 
     return {
@@ -296,6 +414,7 @@ function createASIAirState(guid: string, connection: string | undefined) {
         disconnect,
         trigger_capture,
         main_camera_open,
+        main_camera_close,
     };
 }
 

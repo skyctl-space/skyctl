@@ -60,7 +60,10 @@ pub fn run() {
             asiair::camera_cmds::main_camera_get_name,
             asiair::camera_cmds::main_camera_set_name,
             asiair::camera_cmds::main_camera_get_state,
+            asiair::camera_cmds::main_camera_get_info,
             asiair::camera_cmds::main_camera_get_current_img,
+            asiair::camera_cmds::guide_camera_get_name,
+            asiair::camera_cmds::guide_camera_set_name,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
