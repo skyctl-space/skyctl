@@ -2,7 +2,6 @@
 import { ref, watch, provide } from 'vue'
 import { settings, saveSettings } from "./settings";
 import { Connection, ConnectionType, TelescopeConnection } from "./types";
-import { invoke } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";
 
 import ASIAirMainView from "@/asiair-components/ASIAirMainView.vue"
@@ -10,13 +9,6 @@ import INDIMainView from "@/IndiMainView.vue";
 import AlpacaMainView from "@/AlpacaMainView.vue";
 import SeeStarMainView from "@/SeeStarMainView.vue";
 
-async function startASIAIRDiscovery() {
-  await invoke("start_asiair_discovery");
-}
-
-async function stopASIAIRDiscovery() {
-  await invoke("stop_asiair_discovery");
-}
 
 interface ASIAIRDevice {
   title: string;
@@ -66,12 +58,10 @@ const showAddConnectionModal = ref(false);
 
 async function showConnectionModal() {
   showAddConnectionModal.value = true;
-  startASIAIRDiscovery();
 }
 
 async function hideConnectionModal() {
   showAddConnectionModal.value = false;
-  stopASIAIRDiscovery();
 }
 
 

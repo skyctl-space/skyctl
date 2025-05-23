@@ -11,11 +11,11 @@
 
         <!-- Optional Right content -->
         <div class="text-caption text-end">
-            <v-chip v-if="cameraError || cameraInfo" variant="outlined" class="gap-2 margin-right-4">
-            <span v-if="cameraError" class="text-red">{{ cameraError }}</span>
-            <span v-if="cameraInfo" class="text-blue">{{ cameraInfo }}</span>
+            <v-chip v-if="mainCamera?.errorMessage || mainCamera?.errorMessage" variant="outlined" class="gap-2 margin-right-4">
+            <span v-if="mainCamera?.errorMessage" class="text-red">{{ mainCamera?.errorMessage }}</span>
+            <span v-if="mainCamera?.errorMessage" class="text-blue">{{ mainCamera?.errorMessage }}</span>
             </v-chip>
-            <v-progress-circular v-if="cameraBusy" color="dark-blue" indeterminate></v-progress-circular>
+            <v-progress-circular v-if="mainCamera?.isBusy" color="dark-blue" indeterminate></v-progress-circular>
         </div>
     </v-sheet>
 </template>
@@ -30,7 +30,7 @@ const props = defineProps({
   },
 });
 
-const { cameraInfo, cameraError, cameraBusy} = useASIAirController(props.guid);
+const { mainCamera } = useASIAirController(props.guid, undefined);
 
 const cameraName = 'ASI294MC Pro'
 const resolution = '4144×2822'

@@ -24,10 +24,10 @@
                 </v-tooltip>
             </v-speed-dial>
             <v-spacer />
-            <v-select v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
+            <v-select :disabled="!mainCamera" v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
 
-            <Shutter :exposureTime="exposureTime" :guid="props.guid" />
-            <ExposureSelector v-model="exposureTime" />
+            <Shutter :disabled="!mainCamera" :exposureTime="exposureTime" :guid="props.guid" />
+            <ExposureSelector :disabled="!mainCamera" v-model="exposureTime" />
             <v-spacer />
             <v-btn icon="mdi-download" disabled></v-btn>
         </div>
@@ -40,6 +40,7 @@ import Shutter from './Shutter.vue';
 import ExposureSelector from './ExposureSelector.vue';
 import TelescopeControl from './TelescopeControl.vue';
 import { ref } from 'vue';
+import { useASIAirController } from '@/asiair-components/useASIAirController';
 
 const props = defineProps({
     guid: {
@@ -47,6 +48,8 @@ const props = defineProps({
         required: true,
     }
 });
+
+const { mainCamera } = useASIAirController(props.guid, undefined);
 
 const showControl = ref(false);
 

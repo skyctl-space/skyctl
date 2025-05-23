@@ -1,6 +1,6 @@
 <template>
     <div class="exposure-selector">
-      <div class="exposure-button" @click="startEditing">
+      <div class="exposure-button" :class="{ disabled: props.disabled }" @click="!props.disabled && startEditing()">
         <div class="exp-icon">
           <div class="exp-text">EXP</div>
         </div>
@@ -16,6 +16,8 @@
               class="exp-input"
               :class="{ invalid: isInvalid, shake: isInvalid }"
               @animationend="isInvalid = false"
+              :readonly="props.disabled"
+              :disabled="props.disabled"
             />
           </template>
           <template v-else>
@@ -31,6 +33,7 @@
   
   const props = defineProps<{
     modelValue: number;
+    disabled: boolean;
   }>();
   
   const emit = defineEmits<{
@@ -43,6 +46,7 @@
   const isInvalid = ref(false);
   
   function startEditing() {
+    if (props.disabled) return;
     editing.value = true;
     inputValue.value = props.modelValue.toFixed(3);
     isInvalid.value = false;
@@ -76,6 +80,11 @@
     align-items: center;
     cursor: pointer;
     user-select: none;
+  }
+  .exposure-button.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
   
   .exp-icon {

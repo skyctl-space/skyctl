@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useASIAirController } from '@/asiair-components/useASIAirController';
 
 // --- Props and Models ---
@@ -83,7 +83,12 @@ const props = defineProps({
     showCrosshair: { type: Boolean, default: false }, // New prop to toggle crosshair
 });
 
-const { imageData, imageHeight, imageWidth, imageStats } = useASIAirController(props.guid);
+const { currentImage } = useASIAirController(props.guid, undefined);
+
+const imageData = computed(() => currentImage.value.data);
+const imageWidth = computed(() => currentImage.value.width);
+const imageHeight = computed(() => currentImage.value.height);
+const imageStats = computed(() => currentImage.value.stats);
 
 // v-model for busy state
 const busy = defineModel<boolean>('busy');
@@ -511,7 +516,7 @@ watch(imageData, (newimageData) => {
     updateHistogram(props.telescopeIndex);
     // Update stats
     const combinedStats = statsArr.reduce(
-        (acc, stat) => {
+        (acc: any, stat: any) => {
             acc.min = Math.min(acc.min, stat.min);
             acc.max = Math.max(acc.max, stat.max);
             acc.sum += stat.avg;

@@ -9,7 +9,6 @@
       :model-value="menuIndex === index"
       :close-on-content-click="false"
       transition="scale-transition"
-      offset-y
     >
       <template #activator="{ props }">
         <v-btn
@@ -27,13 +26,20 @@
       </template>
 
       <!-- Render dynamic component based on menu selection -->
-      <component :is="getMenuComponent(item.name)" />
+      <component :guid="props.guid" :is="getMenuComponent(item.name)" />
     </v-menu>
   </v-sheet>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
+const props = defineProps({
+  guid: {
+    type: String,
+    required: true,
+  },
+});
 
 // Import all menu components
 import SettingsMenu from './SettingsMenu.vue'
