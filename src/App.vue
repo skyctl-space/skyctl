@@ -122,17 +122,17 @@ onMounted(() => {
   // Fallback if we don't have access to location APIs
   if (!geoLocation.valid) {
     fetch('https://ipinfo.io/json')
-    .then(response => response.json())
-    .then(data => {
-      const [latitude, longitude] = data.loc.split(',');
-      geoLocation.latitude = parseFloat(latitude);
-      geoLocation.longitude = parseFloat(longitude);
-      geoLocation.valid = true;
-      geoLocation.error = null;
-    })
-    .catch(error => {
-      console.error('Error fetching IP geolocation:', error);
-    });
+      .then(response => response.json())
+      .then(data => {
+        const [latitude, longitude] = data.loc.split(',');
+        geoLocation.latitude = parseFloat(latitude);
+        geoLocation.longitude = parseFloat(longitude);
+        geoLocation.valid = true;
+        geoLocation.error = null;
+      })
+      .catch(error => {
+        console.error('Error fetching IP geolocation:', error);
+      });
   }
 
   onUnmounted(() => {
@@ -193,7 +193,7 @@ function toggleNightMode() {
         <v-list-item prepend-icon="mdi-weather-night" title="Stellarium" value="stellarium"
           to="/stellarium"></v-list-item>
 
-         <v-tooltip text="Coming soon!" location="end">
+        <v-tooltip text="Coming soon!" location="end">
           <template v-slot:activator="{ props }">
             <v-list-item v-bind="props" prepend-icon="mdi-list-status" title="Objectives"
               value="objectives"></v-list-item>
@@ -202,8 +202,7 @@ function toggleNightMode() {
 
         <v-tooltip text="Coming soon!" location="end">
           <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" prepend-icon="mdi-image" title="Image Management"
-              value="images"></v-list-item>
+            <v-list-item v-bind="props" prepend-icon="mdi-image" title="Image Management" value="images"></v-list-item>
           </template>
         </v-tooltip>
 
@@ -214,7 +213,11 @@ function toggleNightMode() {
     </v-navigation-drawer>
 
     <v-main>
-      <RouterView />
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </v-main>
   </v-app>
 </template>

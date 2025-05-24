@@ -1,0 +1,156 @@
+<template>
+  <div class="exposure-selector">
+    <div class="exposure-button" :class="{ disabled: props.disabled }" @click="!props.disabled && startEditing()">
+      <div class="exp-icon">
+        <div class="exp-text">EXP</div>
+      </div>
+
+      <div class="exp-value">
+        <template v-if="editing">
+          <input ref="inputRef" v-model="inputValue" type="text" @keydown.enter.prevent="applyInput"
+            @blur="cancelOrApply" class="exp-input" :class="{ invalid: isInvalid, shake: isInvalid }"
+            @animationend="isInvalid = false" :readonly="props.disabled" :disabled="props.disabled" />
+        </template>
+        <template v-else>
+          {{ exposureTime % 1 === 0 ? exposureTime : exposureTime.toFixed(3) }}s
+        </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, nextTick, watch } from 'vue';
+import { useASIAirController } from '@/asiair-components/useASIAirController';
+
+const props = defineProps<{
+  guid: string;
+  disabled: boolean;
+}>();
+
+const { mainCamera, main_camera_set_exposure } = useASIAirController(props.guid, undefined);
+
+const exposureTime = ref(0);
+
+watch(() => mainCamera.value.exposure_us, () => {
+  exposureTime.value = mainCamera.value.exposure_us / 1000000; // Update exposure time in seconds
+});
+
+const editing = ref(false);
+const inputValue = ref('');
+const inputRef = ref<HTMLInputElement | null>(null);
+const isInvalid = ref(false);
+
+function startEditing() {
+  if (props.disabled) return;
+  editing.value = true;
+  inputValue.value = exposureTime.value.toFixed(3);
+  isInvalid.value = false;
+  nextTick(() => inputRef.value?.focus());
+}
+
+function applyInput() {
+  const num = parseFloat(inputValue.value);
+  if (!isNaN(num) && num >= 0.001) {
+    editing.value = false;
+    isInvalid.value = false;
+    main_camera_set_exposure(num * 1000000); // Convert to microseconds
+  } else {
+    isInvalid.value = true;
+  }
+}
+
+function cancelOrApply() {
+  applyInput();
+}
+</script>
+
+<style scoped>
+.exposure-selector {
+  display: inline-block;
+}
+
+.exposure-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.exposure-button.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.exp-icon {
+  width: 48px;
+  height: 32px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exp-text {
+  font-weight: bold;
+  font-size: 14px;
+  color: currentColor;
+}
+
+.exp-value {
+  margin-top: 4px;
+  font-size: 13px;
+  color: currentColor;
+}
+
+.exp-input {
+  width: 50px;
+  font-size: 13px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  color: currentColor;
+  outline: none;
+  border-bottom: 1px solid currentColor;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.exp-input.invalid {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+/* Shake animation */
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-3px);
+  }
+
+  40% {
+    transform: translateX(3px);
+  }
+
+  60% {
+    transform: translateX(-3px);
+  }
+
+  80% {
+    transform: translateX(3px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.shake {
+  animation: shake 0.3s ease;
+}
+</style>
