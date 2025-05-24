@@ -22,13 +22,19 @@ pub enum ImageProgress {
     Error(String),
 }
 
-/// Macro to generate tauri command functions that call an ASIAir method with no parameters and return Result<T, String>
+/// Macro to generate tauri command functions that call an ASIAir method with optional parameters and return Result<T, String>
+/// Usage:
+/// asiair_simple_getter_cmd! {
+///     pub fn my_cmd(state: State<'_, ASIAirState>, guid: String, param1: Type1, param2: Type2) -> ReturnType { method_name }
+/// }
 macro_rules! asiair_simple_getter_cmd {
     (
         $(#[$outer:meta])* // Allow doc comments
         $vis:vis fn $fn_name:ident(
             $state:ident : State<'_, ASIAirState>,
-            $guid:ident : String
+            $guid:ident : String $(,
+                $param:ident : $ptype:ty
+            )*
         ) -> $ret:ty {
             $method:ident
         }
@@ -38,6 +44,7 @@ macro_rules! asiair_simple_getter_cmd {
         $vis async fn $fn_name(
             $state: State<'_, ASIAirState>,
             $guid: String,
+            $( $param : $ptype ),*
         ) -> Result<$ret, String> {
             #[allow(unused_mut)]
             let mut asiair = {
@@ -49,7 +56,7 @@ macro_rules! asiair_simple_getter_cmd {
                 }
             };
             asiair
-                .$method()
+                .$method($( $param ),*)
                 .await
                 .map_err(|e| format!("Failed to call {}: {:?}", stringify!($method), e))
         }
@@ -146,7 +153,8 @@ asiair_simple_getter_cmd! {
     /// Open the main camera
     pub fn main_camera_open(
         state: State<'_, ASIAirState>,
-        guid: String
+        guid: String,
+        camera_id: u32
     ) -> () {
         main_camera_open
     }

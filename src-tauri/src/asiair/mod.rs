@@ -116,6 +116,19 @@ pub async fn asiair_attach(
         }
     });
 
+    let mut temperature_rx = asiair.subscribe_camera_temperature();
+    let app_clone = app.clone();
+    let should_be_connected = asiair.should_be_connected.clone();
+    let guid_clone = guid.clone();
+    tokio::spawn(async move {
+        while temperature_rx.changed().await.is_ok()
+            && should_be_connected.load(std::sync::atomic::Ordering::SeqCst){
+            let temperature = *temperature_rx.borrow();
+
+            app_clone.emit("asiair_main_camera_temperature", (guid_clone.clone(), temperature)).expect("Failed to emit device list");
+        }
+    });
+
     let mut asiairs = state.asiairs.lock().unwrap();
     asiairs.insert(guid.clone(), asiair);
 

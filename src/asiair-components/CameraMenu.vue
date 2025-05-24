@@ -4,11 +4,11 @@
       <v-col cols="auto" class="pr-1">
         <v-select
           block
-          :disabled ="isCameraOpened"
+          :disabled="isCameraOpened"
           v-model="selectedCamera"
           :items="cameraList"
           item-title="name"
-          item-value="name"
+          item-value="id"
           :item-disabled="isCameraDisabled"
           placeholder="No camera selected"
           density="compact"
@@ -27,22 +27,6 @@
         />
       </v-col>
     </v-row>
-    <!-- <v-row dense class="mb-2" no-gutters>
-      <v-col>
-        <v-slider v-model="gain" label="Gain" :min="-25" :max="300" :step="1" density="compact" thumb-label thicks hide-details/>
-      </v-col>
-    </v-row>
-    <v-row dense align="center" class="mb-2" no-gutters>
-      <v-col cols="auto" class="pr-1">
-        <v-switch v-model="coolerOn" label="Cooling" density="compact" color="indigo" hide-details />
-        <v-slider v-model="targetTemp" label="Target (°C)" :min="-10" :max="20" :step="1" density="compact" thumb-label thicks hide-details  />
-      </v-col>
-    </v-row>
-    <v-row dense no-gutters>
-      <v-col>
-        <v-switch v-model="antiDewHeater" label="Anti-dew heater" color="indigo" density="compact" hide-details />
-      </v-col>
-    </v-row> -->
   </v-card>
 </template>
 
@@ -59,8 +43,9 @@ const props = defineProps({
 
 const { availableCameras, mainCameraName, mainCameraState, guideCameraState, main_camera_open, main_camera_close } = useASIAirController(props.guid, undefined);
 
-const cameraList = ref<{ name: string; selectable: boolean }[]>([]);
-const selectedCamera = ref<string | null>(mainCameraName.value);
+const cameraList = ref<{ name: string; selectable: boolean; id: number }[]>([]);
+const selectedCamera = ref<number | null>(null);
+const selectedCameraId = ref<number>(0);
 
 function isCameraDisabled(item: { name: string; selectable: boolean }): boolean {
   return !item.selectable;
@@ -71,8 +56,9 @@ function handleMainCameraToggle(val: boolean | null) {
     return;
   }
 
+  console.log('Main camera toggle:', val, selectedCamera.value);
   if (val) {
-    main_camera_open(selectedCamera.value);
+    main_camera_open(selectedCameraId.value);
   } else {
     main_camera_close();
   }
@@ -105,11 +91,30 @@ watch(
       }
       cameraList.value = cameras.map(cam => ({
         name: cam.name,
-        selectable: !(guideActive && cam.name === guideName)
+        selectable: !(guideActive && cam.name === guideName),
+        id: cam.id
       }));
     }
   },
   { immediate: true }
+);
+
+watch(
+  mainCameraName,
+  (name) => {
+    // Set selectedCamera to the id of the camera with the matching name
+    const found = cameraList.value.find(cam => cam.name === name);
+    selectedCamera.value = found ? found.id : null;
+    selectedCameraId.value = selectedCamera.value ?? 0;
+  },
+  { immediate: true }
+);
+
+watch(
+  selectedCamera,
+  (id) => {
+    selectedCameraId.value = id ?? 0;
+  }
 );
 
 </script>
