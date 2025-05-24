@@ -1,5 +1,6 @@
 <template>
   <v-sheet
+    :class="{ 'hidden-menu': !maximized }"
     class="menu-bar d-flex align-center justify-end px-2"
     elevation="2"
   >
@@ -36,10 +37,8 @@
 import { ref } from 'vue'
 
 const props = defineProps({
-  guid: {
-    type: String,
-    required: true,
-  },
+  guid: { type: String, required: true },
+  maximized: { type: Boolean, default: true }
 });
 
 // Import all menu components
@@ -113,5 +112,8 @@ function getMenuComponent(menuName: string) {
   right: 0;
   z-index: 10;
   pointer-events: auto;
+}
+.hidden-menu {
+  display: none !important;
 }
 </style>

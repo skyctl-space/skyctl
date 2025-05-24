@@ -25,15 +25,9 @@
 import { ref, computed } from 'vue';
 import { useASIAirController } from '@/asiair-components/useASIAirController';
 
-const emit = defineEmits(['shutter-start', 'shutter-end']);
-
 const props = defineProps({
   guid: {
     type: String,
-    required: true,
-  },
-  exposureTime: {
-    type: Number,
     required: true,
   },
   disabled: {
@@ -42,10 +36,14 @@ const props = defineProps({
   },
 });
 
-const { trigger_capture } = useASIAirController(props.guid, undefined);
+const { trigger_capture, mainCamera } = useASIAirController(props.guid, undefined);
+
+const exposureTime = computed(() => {
+  return mainCamera.value.exposure_us;
+});
 
 const duration = computed(() => {
-  return props.exposureTime * 1000; // Convert seconds to milliseconds
+  return exposureTime.value / 1000; // Convert to milliseconds
 });
 
 const isActive = ref(false);
@@ -71,8 +69,6 @@ function startShutter() {
   isActive.value = true;
   progress.value = 0;
   remainingSeconds.value = Math.ceil(duration.value / 1000);
-
-  emit('shutter-start');
   
   trigger_capture();
 
@@ -99,7 +95,6 @@ async function endShutter() {
   progress.value = 0;
   clearInterval(intervalId!);
   clearTimeout(timeoutId!);
-  emit('shutter-end');
 
   console.log('Shutter ended');
 }

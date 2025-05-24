@@ -7,16 +7,11 @@ use serde::Serialize;
 use tauri::State;
 use crate::rawimage::{RawImage, RawRGBImage, Stat, BayerPattern};
 
-#[derive(Clone, Serialize, Debug)]
-struct ConnectionChange {
-    guid: String,
-    connected: bool,
-}
-
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "event", content = "data")]
 pub enum ImageProgress {
     Fetching,
+    #[allow(dead_code)]
     Downsampling,
     Debayering,
     Rendering {
@@ -44,6 +39,7 @@ macro_rules! asiair_simple_getter_cmd {
             $state: State<'_, ASIAirState>,
             $guid: String,
         ) -> Result<$ret, String> {
+            #[allow(unused_mut)]
             let mut asiair = {
                 let asiairs = $state.asiairs.lock().unwrap();
                 if let Some(asiair) = asiairs.get(&$guid) {
@@ -205,6 +201,15 @@ asiair_simple_getter_cmd! {
         guid: String
     ) -> u64 {
         main_camera_get_exposure
+    }
+}
+
+asiair_simple_setter_cmd! {
+    pub fn main_camera_start_exposure(
+        state: State<'_, ASIAirState>,
+        guid: String,
+    ) {
+        main_camera_start_exposure
     }
 }
 

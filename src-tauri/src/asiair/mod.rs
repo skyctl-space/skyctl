@@ -10,7 +10,7 @@ use std::net::Ipv4Addr;
 use tauri::State;
 
 #[derive(Clone, Serialize, Debug)]
-struct ConnectionChange {
+pub struct ConnectionChange {
     guid: String,
     connected: bool,
 }
@@ -99,6 +99,20 @@ pub async fn asiair_attach(
         while camera_state_rx.changed().await.is_ok()
             && should_be_connected.load(std::sync::atomic::Ordering::SeqCst){
             app_clone.emit("asiair_camera_state_change", guid_clone.clone()).expect("Failed to emit device list");
+        }
+    });
+
+    let mut exposure_rx = asiair.subscribe_exposure();
+    let app_clone = app.clone();
+    let should_be_connected = asiair.should_be_connected.clone();
+    let guid_clone = guid.clone();
+
+    tokio::spawn(async move {
+        while exposure_rx.changed().await.is_ok()
+            && should_be_connected.load(std::sync::atomic::Ordering::SeqCst){
+            let exposure = *exposure_rx.borrow();
+
+            app_clone.emit("asiair_exposure", (guid_clone.clone(), exposure)).expect("Failed to emit device list");
         }
     });
 

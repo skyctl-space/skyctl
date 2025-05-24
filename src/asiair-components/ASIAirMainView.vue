@@ -62,11 +62,11 @@
             <v-progress-circular color="error" v-show="isBusy" indeterminate></v-progress-circular>
         </v-sheet>
 
-        <LeftPanel v-if="maximized" v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair"
+        <LeftPanel v-show="maximized" v-model:show-histogram="showHistogram" v-model:show-crosshair="showCrosshair"
             :autoHide="false" />
-        <RigthPanel v-if="maximized" v-model:active-panel="activePanel" :guid="telescope_guid" />
-        <StatusBar v-if="maximized" :guid="telescope_guid"/>
-        <MenuBar v-if="maximized" :guid="telescope_guid" />
+        <RigthPanel v-show="maximized" v-model:active-panel="activePanel" :guid="telescope_guid" />
+        <MenuBar :maximized="maximized" :guid="telescope_guid" />
+        <StatusBar :guid="telescope_guid"/>
     </v-container>
 </template>
 

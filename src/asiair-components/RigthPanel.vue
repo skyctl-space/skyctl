@@ -26,8 +26,8 @@
             <v-spacer />
             <v-select :disabled="!mainCamera.isConnected" v-model="selectedBin" :items="bins" density="compact" variant="outlined"></v-select>
 
-            <Shutter :disabled="!mainCamera.isConnected" :exposureTime="exposureTime" :guid="props.guid" />
-            <ExposureSelector :disabled="!mainCamera.isConnected" v-model="exposureTime" />
+            <Shutter :disabled="!mainCamera.isConnected" :guid="props.guid" />
+            <ExposureSelector :disabled="!mainCamera.isConnected" :guid="props.guid" />
             <v-spacer />
             <v-btn icon="mdi-download" disabled></v-btn>
         </div>
@@ -55,8 +55,6 @@ const showControl = ref(false);
 
 const activePanel = defineModel<number>('activePanel', { required: true });
 
-const exposureTime = ref(1.0); // seconds
-
 const selectedBin = ref('Bin1'); // Default selected bin
 
 var bins = [
@@ -81,20 +79,6 @@ updateBins();
 
 watch(() => mainCamera.value.info, () => {
     updateBins();
-});
-
-watch(() => mainCamera.value.info, (newInfo) => {
-    if (newInfo) {
-        // Update the selected bin based on the camera's supported bins
-        const supportedBins = newInfo.bins;
-        bins = [];
-        for (const bin of supportedBins) {
-            bins.push("Bin" + bin);
-        }
-        if (!bins.includes(selectedBin.value)) {
-            selectedBin.value = bins[0] || '';
-        }
-    }
 });
 
 // Icons for each panel
