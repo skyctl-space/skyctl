@@ -1,12 +1,12 @@
 <template>
-    <v-sheet v-show="props.showHistogram" class="floating-controls" elevation="8"
-        :style="{ left: controlsPos.x + 'px', top: controlsPos.y + 'px', position: 'absolute', zIndex: 10, minWidth: '800px', cursor: dragging ? 'grabbing' : 'grab' }"
+    <v-sheet v-show="props.showHistogram && props.maximized" class="floating-controls" elevation="8" border rounded
+        :style="{ left: controlsPos.x + 'px', top: controlsPos.y + 'px', position: 'absolute', zIndex: 10, minWidth: '500px', cursor: dragging ? 'grabbing' : 'grab' }"
         @mousedown.stop="onControlsMouseDown">
         <v-row dense no-gutters class="d-flex" justify="space-between" align="start">
             <v-row dense no-gutters class="d-flex align-center justify-center">
                 <v-col cols="12" class="d-flex" style="position:relative;">
                     <canvas :ref="el => histogramRefs[props.telescopeIndex] = el as HTMLCanvasElement"
-                        class="histogram-canvas" style="flex: 1; width: 100%; height: 80px;"></canvas>
+                        class="histogram-canvas" style="flex: 1; width: 100%; height: 60px;"></canvas>
                     <div v-if="histogramTooltip && hoveredBin !== null"
                         :style="{ position: 'absolute', left: histogramTooltip.x + 'px', top: (histogramTooltip.y + 10) + 'px', pointerEvents: 'none', background: '#222', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', zIndex: 20, border: '1px solid #444', transform: 'translate(-50%, 0)' }">
                         Bin {{ hoveredBin }}:
@@ -19,15 +19,16 @@
         </v-row>
         <v-row dense no-gutters class="mt-2">
             <v-col cols="2" class="d-flex align-center justify-center">
-                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="ml-2 mr-2" @click="resetStretch">Reset</v-btn>
+                <v-btn size="x-small" prepend-icon="mdi-refresh" block class="ml-2 mr-2"
+                    @click="resetStretch">Reset</v-btn>
             </v-col>
-            <v-col cols="1"/>
+            <v-col cols="1" />
             <v-col cols="2" class="d-flex align-center justify-center">
                 <v-btn size="x-small" prepend-icon="mdi-chart-histogram" block class="ml-2 mr-2"
                     :variant="logScale ? 'outlined' : 'flat'" @click="toggleLogScale">Log Scale</v-btn>
             </v-col>
             <v-col cols="1"></v-col>
-            <v-col cols="6">
+            <v-col cols="6" style="font-size: 12px;">
                 <v-row dense justify="end">
                     <v-col cols="4">
                         <span class="font-weight-bold">Min:</span> {{ Math.round(stats.min) }}
@@ -48,22 +49,47 @@
                 thumb-label></v-slider>
         </v-row>
     </v-sheet>
-    <v-container fluid fill-height style="height:100%;width:100%;padding:0;">
-        <canvas :ref="el => canvasRefs[props.telescopeIndex] = el as HTMLCanvasElement" class="fits-canvas"></canvas>
+    <v-container fluid style="padding: 0; height: 100%;">
+        <div class="image-viewer-wrapper">
+            <canvas :ref="el => canvasRefs[props.telescopeIndex] = el as HTMLCanvasElement"
+                class="fits-canvas"></canvas>
+
+            <div v-if="props.showCrosshair" class="crosshair-overlay">
+                <!-- Full edge-to-edge HTML lines -->
+                <div class="horizontal-line"></div>
+                <div class="vertical-line"></div>
+
+                <!-- Centered SVG circles -->
+                <svg class="circle-overlay" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+                    <circle v-for="(r, i) in [4, 8, 20, 30]" :key="i" :cx="50" :cy="50" :r="r" stroke="red"
+                        stroke-opacity="0.5" fill="none" stroke-width="0.3" />
+                </svg>
+            </div>
+        </div>
     </v-container>
 </template>
 
 <script setup lang="ts">
-// --- Imports ---
-import { ref, onMounted, watch } from 'vue';
-import { listen, Event } from '@tauri-apps/api/event';
+import { ref, onMounted, watch, computed } from 'vue';
+import { useASIAirController } from '@/asiair-components/useASIAirController';
 
 // --- Props and Models ---
 // Props received from parent
 const props = defineProps({
+    maximized: { type: Boolean, default: false },
+    guid: { type: String, required: true },
     telescopeIndex: { type: Number, required: true },
     showHistogram: { type: Boolean, default: true },
+    showCrosshair: { type: Boolean, default: false }, // New prop to toggle crosshair
 });
+
+const { currentImage } = useASIAirController(props.guid, undefined);
+
+const imageData = computed(() => currentImage.value.data);
+const imageWidth = computed(() => currentImage.value.width);
+const imageHeight = computed(() => currentImage.value.height);
+const imageStats = computed(() => currentImage.value.stats);
+
 // v-model for busy state
 const busy = defineModel<boolean>('busy');
 
@@ -82,7 +108,7 @@ const stats = ref({ min: 0, max: 0, avg: 0 });
 const logScale = ref(false);
 
 // --- Stretch and Channel Parameters ---
-const targetBkg = ref(0.25);
+const targetBkg = ref(0.10);
 const shadowsClip = ref(-1.25);
 const channelParams = ref([
     { median: 0, avg_dev: 0, max: 0 }, // R
@@ -113,7 +139,7 @@ watch([
 });
 
 // --- Floating Controls (Histogram) Position and Drag State ---
-const controlsPos = ref({ x: 40, y: 40 });
+const controlsPos = ref({ x: 5, y: 5 });
 const dragging = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
 function onControlsMouseDown(e: MouseEvent) {
@@ -138,7 +164,7 @@ function onControlsMouseUp() {
 
 // --- Stretch Controls ---
 function resetStretch() {
-    targetBkg.value = 0.25;
+    targetBkg.value = 0.10;
     shadowsClip.value = -1.25;
     logScale.value = false;
 }
@@ -335,21 +361,6 @@ function useResizeCanvasToParent(canvasRef: () => HTMLCanvasElement | null) {
     });
 }
 
-// --- Event Interface ---
-interface image_update_event {
-    index: number;
-    image_data: {
-        width: number;
-        height: number;
-        pixels: Uint16Array,
-        stats: [
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-            { min: number; max: number; avg: number; median: number; avg_dev: number },
-        ]
-    };
-}
-
 // --- Main Mount Logic ---
 onMounted(() => {
     // Build GL state for each canvas on mount
@@ -455,77 +466,71 @@ onMounted(() => {
     }
     // Attach ResizeObserver to fits-canvas
     useResizeCanvasToParent(() => canvasRefs.value[props.telescopeIndex]);
-    // Listen to fits_image_updated event using Tauri's event system
-    listen<image_update_event>('fits_image_updated', (event: Event<image_update_event>) => {
-        const { index, image_data } = event.payload;
-        if (index === props.telescopeIndex) {
-            // Compute auto-stretch parameters
-            if (!image_data.stats || image_data.stats.length < 3) {
-                console.error('Invalid image data received');
-                return;
-            }
-            {
-                const { c0, c1, m } = autoStretchParams(image_data.stats[0].median, image_data.stats[0].avg_dev, image_data.stats[0].max);
-                stretchParamsR.value = { c0, c1, m };
-            }
-            {
-                const { c0, c1, m } = autoStretchParams(image_data.stats[1].median, image_data.stats[1].avg_dev, image_data.stats[1].max);
-                stretchParamsG.value = { c0, c1, m };
-            }
-            {
-                const { c0, c1, m } = autoStretchParams(image_data.stats[2].median, image_data.stats[2].avg_dev, image_data.stats[2].max);
-                stretchParamsB.value = { c0, c1, m };
-            }
-            // Set per-channel median and avg_dev
-            for (let i = 0; i < 3; ++i) {
-                channelParams.value[i].median = image_data.stats[i].median;
-                channelParams.value[i].avg_dev = image_data.stats[i].avg_dev;
-                channelParams.value[i].max = image_data.stats[i].max;
-            }
+});
 
-            // Convert Uint16Array to normalized Float32Array (per channel)
-            let floatPixels: Float32Array;
-            if (image_data.stats && image_data.stats.length === 3) {
-                floatPixels = new Float32Array(image_data.pixels.length);
-                const maxR = image_data.stats[0].max || 1;
-                const maxG = image_data.stats[1].max || 1;
-                const maxB = image_data.stats[2].max || 1;
-                for (let i = 0; i < image_data.pixels.length; i += 3) {
-                    floatPixels[i] = image_data.pixels[i] / maxR;
-                    floatPixels[i + 1] = image_data.pixels[i + 1] / maxG;
-                    floatPixels[i + 2] = image_data.pixels[i + 2] / maxB;
+// --- Watch for imageData changes and update view ---
+watch(imageData, (newimageData) => {
+    const width = imageWidth.value;
+    const height = imageHeight.value;
+    const pixels = newimageData;
+    const statsArr = imageStats.value;
 
-                    if (i < 10) { // Debugging: log first 10 pixels
-                        console.log('Pixel:', i, 'R:', floatPixels[i], 'G:', floatPixels[i + 1], 'B:', floatPixels[i + 2]);
-                    }
-                }
-            } else {
-                floatPixels = new Float32Array(image_data.pixels);
-            }
-
-            renderImage(index, image_data.width, image_data.height, floatPixels);
-            loadedImageHeight.value = image_data.height;
-            loadedImageWith.value = image_data.width;
-            updateHistogram(index);
-            // Update stats
-            const combinedStats = image_data.stats.reduce(
-                (acc, stat) => {
-                    acc.min = Math.min(acc.min, stat.min);
-                    acc.max = Math.max(acc.max, stat.max);
-                    acc.sum += stat.avg;
-                    acc.count++;
-                    return acc;
-                },
-                { min: Infinity, max: -Infinity, sum: 0, count: 0 }
-            );
-            stats.value = {
-                min: combinedStats.min,
-                max: combinedStats.max,
-                avg: combinedStats.sum / combinedStats.count
-            };
-            busy.value = false;
+    if (!pixels || !width || !height || !statsArr || statsArr.length < 3) return;
+    // Compute auto-stretch parameters
+    {
+        const { c0, c1, m } = autoStretchParams(statsArr[0].median, statsArr[0].avg_dev, statsArr[0].max);
+        stretchParamsR.value = { c0, c1, m };
+    }
+    {
+        const { c0, c1, m } = autoStretchParams(statsArr[1].median, statsArr[1].avg_dev, statsArr[1].max);
+        stretchParamsG.value = { c0, c1, m };
+    }
+    {
+        const { c0, c1, m } = autoStretchParams(statsArr[2].median, statsArr[2].avg_dev, statsArr[2].max);
+        stretchParamsB.value = { c0, c1, m };
+    }
+    // Set per-channel median and avg_dev
+    for (let i = 0; i < 3; ++i) {
+        channelParams.value[i].median = statsArr[i].median;
+        channelParams.value[i].avg_dev = statsArr[i].avg_dev;
+        channelParams.value[i].max = statsArr[i].max;
+    }
+    // Convert Uint16Array to normalized Float32Array (per channel)
+    let floatPixels;
+    if (statsArr && statsArr.length === 3) {
+        floatPixels = new Float32Array(pixels.length);
+        const maxR = statsArr[0].max || 1;
+        const maxG = statsArr[1].max || 1;
+        const maxB = statsArr[2].max || 1;
+        for (let i = 0; i < pixels.length; i += 3) {
+            floatPixels[i] = pixels[i] / maxR;
+            floatPixels[i + 1] = pixels[i + 1] / maxG;
+            floatPixels[i + 2] = pixels[i + 2] / maxB;
         }
-    });
+    } else {
+        floatPixels = new Float32Array(pixels);
+    }
+    renderImage(props.telescopeIndex, width, height, floatPixels);
+    loadedImageHeight.value = height;
+    loadedImageWith.value = width;
+    updateHistogram(props.telescopeIndex);
+    // Update stats
+    const combinedStats = statsArr.reduce(
+        (acc: any, stat: any) => {
+            acc.min = Math.min(acc.min, stat.min);
+            acc.max = Math.max(acc.max, stat.max);
+            acc.sum += stat.avg;
+            acc.count++;
+            return acc;
+        },
+        { min: Infinity, max: -Infinity, sum: 0, count: 0 }
+    );
+    stats.value = {
+        min: combinedStats.min,
+        max: combinedStats.max,
+        avg: combinedStats.sum / combinedStats.count
+    };
+    busy.value = false;
 });
 
 // --- WebGL Image Redraw and Uniform Update ---
@@ -601,12 +606,14 @@ function renderImage(index: number, width: number, height: number, pixels: Float
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    updateHistogram(props.telescopeIndex);
 }
 
 // --- Auto-Stretch Parameter Calculation ---
 function autoStretchParams(
     median: number, avgDev: number, max: number,
-    targetBkg = 0.25,
+    targetBkg = 0.10,
     shadowsClip = -1.25
 ) {
     function mtf(m: number, x: number): number {
@@ -626,10 +633,59 @@ function autoStretchParams(
 </script>
 
 <style scoped>
+.image-viewer-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 .fits-canvas {
     width: 100% !important;
     height: 100% !important;
-    background: black;
+    background: linear-gradient(180deg, #000000, #434343);
+    display: block;
+}
+
+.crosshair-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.horizontal-line,
+.vertical-line {
+    position: absolute;
+    background-color: red;
+    opacity: 0.5;
+}
+
+.horizontal-line {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    transform: translateY(-0.5px);
+}
+
+.vertical-line {
+    left: 50%;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    transform: translateX(-0.5px);
+}
+
+/* SVG overlay for circles */
+.circle-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 .v-row.d-flex.align-center.justify-center {
@@ -646,7 +702,7 @@ function autoStretchParams(
 
 .histogram-canvas {
     width: 100%;
-    height: 100px;
+    height: 200px;
     background-color: rgba(0, 0, 0, 0.4);
 }
 

@@ -31,7 +31,11 @@ pub fn downsample(data: &Array2<i32>, max_width: usize, max_height: usize) -> Ar
                         count += 1;
                     }
                 }
-                if count > 0 { (sum / count) as i32 } else { 0 }
+                if count > 0 {
+                    (sum / count) as i32
+                } else {
+                    0
+                }
             })
         })
         .collect();
@@ -70,7 +74,11 @@ pub fn downsample_rgb(data: &Array3<i32>, max_width: usize, max_height: usize) -
                             count += 1;
                         }
                     }
-                    if count > 0 { (sum / count) as i32 } else { 0 }
+                    if count > 0 {
+                        (sum / count) as i32
+                    } else {
+                        0
+                    }
                 })
             })
         })

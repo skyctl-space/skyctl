@@ -2,29 +2,21 @@
 import { ref, watch, provide } from 'vue'
 import { settings, saveSettings } from "./settings";
 import { Connection, ConnectionType, TelescopeConnection } from "./types";
-import { invoke } from '@tauri-apps/api/core';
 import { listen } from "@tauri-apps/api/event";
 
-import ASIAirMainView from "./ASIAirMainView.vue"
-import INDIMainView from "./IndiMainView.vue";
-import AlpacaMainView from "./AlpacaMainView.vue";
-import SeeStarMainView from "./SeeStarMainView.vue";
+import ASIAirMainView from "@/asiair-components/ASIAirMainView.vue"
+import INDIMainView from "@/IndiMainView.vue";
+import AlpacaMainView from "@/AlpacaMainView.vue";
+import SeeStarMainView from "@/SeeStarMainView.vue";
 
-async function startASIAIRDiscovery() {
-  await invoke("start_asiair_discovery");
-}
-
-async function stopASIAIRDiscovery() {
-  await invoke("stop_asiair_discovery");
-}
 
 interface ASIAIRDevice {
   title: string;
   value: string;
+  guid: string;
 }
 
 listen("discovered_device", (event) => {
-  console.log("Device found:", event.payload);
   detectedASIAIRDevices.value = event.payload as ASIAIRDevice[];
 });
 
@@ -66,12 +58,10 @@ const showAddConnectionModal = ref(false);
 
 async function showConnectionModal() {
   showAddConnectionModal.value = true;
-  startASIAIRDiscovery();
 }
 
 async function hideConnectionModal() {
   showAddConnectionModal.value = false;
-  stopASIAIRDiscovery();
 }
 
 
@@ -81,6 +71,7 @@ const newConnection = ref<Connection>({
   description: '',
   type: ConnectionType.ASIAIR,
   host: '',
+  guid: '',
 });
 const newConnectionErrorMessage = ref('');
 
@@ -112,6 +103,7 @@ function resetNewConnection() {
     description: '',
     type: ConnectionType.ASIAIR,
     host: '',
+    guid: '',
   };
 }
 
@@ -145,7 +137,7 @@ function handleRemoveConnection() {
 </script>
 
 <template>
-  <v-container fluid class="pa-4 fill-height d-flex flex-column" style="width: 100%">
+  <v-container fluid class="pa-2 fill-height d-flex flex-column" style="width: 100%">
     <v-toolbar border density="compact" class="mb-4" :class="{ hidden: maximizedIndex !== null }">
       <v-toolbar-title text="Telescope Control"></v-toolbar-title>
       <v-btn elevation="4" prepend-icon="mdi-plus" @click="showConnectionModal()">Add Connection...</v-btn>
@@ -154,35 +146,39 @@ function handleRemoveConnection() {
       <v-card v-for="(telescope, i) in telescopes" :key="i" class="panel"
         :class="{ maximized: maximizedIndex === i, hidden: maximizedIndex !== null && maximizedIndex !== i }"
         elevation="4">
-        <v-card-title density="compact" class="d-flex justify-space-between align-center text-white">
+        <v-card-title density="compact" class="d-flex justify-space-between align-center text-white pa-1">
           <v-menu>
             <template v-slot:activator="{ props }">
-              <v-btn icon="mdi-dots-vertical" v-bind="props">
+              <v-btn size="x-small" icon="mdi-dots-vertical" v-bind="props">
               </v-btn>
             </template>
             <v-list>
               <v-list-item>Connection string: {{ telescope.config.host }}</v-list-item>
               <v-list-item>
-                <v-btn prepend-icon="mdi-delete" text="Remove" @click="confirmRemoveConnection(telescope.configIdx)" />
+                <v-btn block size="x-small" prepend-icon="mdi-delete" text="Remove" @click="confirmRemoveConnection(telescope.configIdx)" />
               </v-list-item>
               <v-list-item v-if="telescope.connected">
-                <v-btn prepend-icon="mdi-cancel" text="Disconnect" @click="telescope.connected = false" />
+                <v-btn block size="x-small" prepend-icon="mdi-cancel" text="Disconnect" @click="telescope.connected = false" />
               </v-list-item>
             </v-list>
           </v-menu>
-
+          <v-img v-if="telescope.config.type === ConnectionType.ASIAIR" src="/ASIair_logo.png" :height="30"/>
+          <v-spacer v-else></v-spacer>
 
           <v-spacer></v-spacer>
-          <span>{{ telescope.config.name }} ({{ telescope.config.type }})</span>
+          <span class="text-body-1">{{ telescope.config.name }}</span>
+
           <v-spacer></v-spacer>
-          <v-icon :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
-          <v-btn size="small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
+          <v-spacer></v-spacer>
+
+          <v-icon block size="x-small" :color="telescope.connected ? 'green' : 'red'" icon="mdi-connection"></v-icon>
+          <v-btn size="x-small" variant="text" icon @click="toggleMaximize(i)" class="text-white">
             <v-icon>{{ maximizedIndex === i ? "mdi-arrow-collapse" : "mdi-arrow-expand" }}</v-icon>
           </v-btn>
         </v-card-title>
 
         <v-card-text class="panel-body pa-0 border-0">
-          <ASIAirMainView v-if="telescope.config.type === ConnectionType.ASIAIR" :telescopeIndex="i"/>
+          <ASIAirMainView v-if="telescope.config.type === ConnectionType.ASIAIR" :telescopeIndex="i" :maximized="maximizedIndex === i"/>
           <INDIMainView v-if="telescope.config.type === ConnectionType.INDI" :telescopeIndex="i"/>
           <AlpacaMainView v-if="telescope.config.type === ConnectionType.ALPACA" :telescopeIndex="i"/>
           <SeeStarMainView v-if="telescope.config.type === ConnectionType.SEESTAR" :telescopeIndex="i"/>
@@ -203,7 +199,7 @@ function handleRemoveConnection() {
             Discovering ASIAir devices... <v-progress-circular indeterminate></v-progress-circular>
             <v-list elevation="4">
               <v-list-item v-for="device in detectedASIAIRDevices" :key="device.value"
-                @click="newConnection.host = device.value; newConnection.name = device.title" class="cursor-pointer">
+                @click="newConnection.host = 'auto'; newConnection.name = device.title; newConnection.guid=device.guid" class="cursor-pointer">
                 <template #prepend>
                   <v-icon icon="mdi-telescope" />
                 </template>
