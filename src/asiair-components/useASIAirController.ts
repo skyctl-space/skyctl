@@ -88,6 +88,7 @@ type ASIAirPublicState = {
     guideCameraState: CameraState;
     mainCamera: Camera;
     currentImage: CurrentImage;
+    downloadProgress: number;
 };
 
 type ASIAirState = {
@@ -183,6 +184,17 @@ listen<ExposureEvent>("asiair_exposure", async (event: any) => {
     }
 });
 
+listen<number>("asiair_download_progress", (event: any) => {
+    const guid = event.payload[0];
+    const progress = event.payload[1];
+    
+    const controller = asiairControllers.get(guid);
+    if (controller) {
+        controller.downloadProgress.value = Number(progress.toFixed(1));
+        controller.mainCamera.value.infoMessage = `Fetching image ${progress}%...`;
+    }
+});
+
 async function updateCameraInfo(guid: string, mainCamera: Ref<Camera>) {
     await invoke<CameraInfo>("main_camera_get_info", {
         guid: guid,
@@ -265,6 +277,7 @@ function createASIAirState(guid: string, connection: string | undefined) {
                 height: null,
                 stats: [],
             },
+            downloadProgress: 0,
         },
     });
 
@@ -398,7 +411,7 @@ function createASIAirState(guid: string, connection: string | undefined) {
         imgNotificationChannel.onmessage = (message) => {
             switch (message.event) {
                 case "fetching":
-                    mainCamera.infoMessage = "Fetching image...";
+                    mainCamera.infoMessage = `Fetching image ${state.public.downloadProgress}%...`;
                     break;
                 case "downsampling":
                     mainCamera.infoMessage = "Downsampling...";
@@ -457,6 +470,8 @@ function createASIAirState(guid: string, connection: string | undefined) {
             mainCamera.infoMessage = null;
             mainCamera.isBusy = false;
         };
+
+        state.public.downloadProgress =  0;
 
         await invoke("main_camera_get_current_img", {
             guid: state.guid,
